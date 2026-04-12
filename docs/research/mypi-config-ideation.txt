@@ -1,0 +1,19 @@
+Config actuelle : Ubuntu presque fraichement installé. Pi (https://github.com/badlogic/pi-mono) comme harness. Différents modèles.
+Je transitionne de Windows + Claude Code (opus / sonnet) vers ubuntu + pi (GPT5.4 / opus / sonnet / GLM-5.1)
+
+En général dans mes projets d'envergure j'utilise la méthode BMAD (https://github.com/bmad-code-org/BMAD-METHOD). Elle me permet de générer des fichier .md contenant tout ce qu'il faut pour que les agents aient du contexte et se passent la main entre eux. Project brief, PRD, archi, epics, stories. Les stories sont la base de travail la plupart du temps (dev -> review -> retour dev si findings).
+
+Ce dont j'ai réellement besoin c'est d'avoir un socle pour pouvoir manipuler des agents spécialisés, soit provenant de la méthode BMAD, soit des agents que je crée moi dans Pi. Pertinence à vérifier. De leur donner des workflows, soit provenant de la méthode BMAD, soit des workflows en typescript dans Pi. Pertinence à vérifier.
+
+Pendant le dev (90% du temps dans un projet) je faisais généralement avec claude code :
+"Lance une team sur la story XXX avec 1 agent dev (sonnet) suivant le workflow .claude/skills/bmad-dev-story. Quand terminé lance un reviewer (opus) sur la story XXX suivant le workflow .claude/skills/bmad-code-review. Une fois terminé lance un second reviewer (opus) sur la story XXX suivant le workflow .claude/skills/bmad-code-review.
+Si les reviewers ont rapporté des findings, alors relance l'agent dev, même story, même workflow.
+Continue jusqu'à 3 itérations. S'il existe toujours des findings après 3 itérations je prendrai la main."
+
+L'idée du projet actuel est de pouvoir automatiser cela sur une story en ayant un modèle un peu cheap (glm-5.1) pour le dév (le gros des tokens) puis de lancer 2 reviews sur opus et gpt-5.4.
+
+Autre point : Je voudrais suivre un cycle TDD pour le développement, ce n'est actuellement pas prévu par la méthode BMAD et je pense que les tests sont rédigés après le code. A confirmer. Il faudrait creuser ce sujet sérieusement (voir docs/research/tdd-initiative).
+
+Pi est très configurable, on trouve dans ce repo des exemples d'extensions que je pourrais utiliser : https://github.com/disler/pi-vs-claude-code. Je ne dis pas qu'il faut les utiliser telles que, mais on peut certainement s'en inspirer.
+
+Une fois qu'on a le repo en cours avec la configuration générale, qu'on pourrait d'ailleurs construire en suivant les principe édictés ci-dessus (BMAD, TDD, sous-agents, workflows) je veux pouvoir l'intégrer dans un nouveau projet facilement, un peu comme on installe la méthode BMAD.
