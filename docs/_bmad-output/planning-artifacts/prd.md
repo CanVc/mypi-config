@@ -361,31 +361,25 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 
 ## Non-Functional Requirements
 
-### Performance
-
-- Bootstrap completes in under 5 minutes on a fresh Ubuntu machine with prerequisites installed
-- Context assembly for a new agent stage completes before the LLM call begins — no perceptible delay introduced by the harness itself
-- Fresh-context launch overhead per agent stage is negligible relative to LLM execution time
-
 ### Security
 
 - LLM provider API keys are never hardcoded in agent definition files or committed to the repository
-- Pi hook definitions are scoped to the minimum required shell access — no hook executes arbitrary commands without explicit declaration
+- Each agent/workflow profile explicitly declares its allowed active tools, and no tool outside that allowlist can be invoked during execution; static validation passes for 100% of profiles
 - The bootstrap process does not require elevated (root) permissions
 
 ### Integration
 
-- All agents and workflows function correctly with Pi ≥ 0.67.2
-- All derived BMAD workflows are compatible with BMAD v6 base installation
+- A smoke suite (bootstrap + standard workflow run) passes at 100% on Pi 0.67.2 and the latest tested stable Pi version in a clean environment
+- On a clean BMAD v6 base installation, 100% of reference derived workflows install and execute without manual file edits
 - Story files produced by standard BMAD story creation are valid inputs to the harness without modification
 
 ### Reliability
 
 - Iteration caps are enforced deterministically — a cap of N never allows N+1 iterations
-- When escalation occurs (cap reached, batch blocked), the builder receives a clear, actionable signal — not a silent failure
+- When escalation occurs (cap reached, batch blocked), the harness message includes the cause, story/batch identifier, and next recommended action; this must pass in 3/3 escalation test scenarios
 
 ### Maintainability
 
 - Agent definition files are readable and editable without knowledge of Pi internals — a builder can change a model assignment in under 2 minutes
-- Pi TypeScript extensions follow a consistent structure so new extensions can be added by adapting existing ones
-- BMAD-derived workflows follow the same conventions as base BMAD workflows — a builder familiar with BMAD can read a derived workflow without a separate learning curve
+- Every Pi TypeScript extension follows the standard extension template and passes lint/typecheck at 100%; non-conforming extensions fail CI validation
+- A builder familiar with BMAD identifies trigger, phases, and output artifacts in a derived workflow in ≤10 minutes; success rate is ≥80% across 3 internal reviewers
