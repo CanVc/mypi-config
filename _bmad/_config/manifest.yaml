@@ -1,23 +1,23 @@
 installation:
   version: 6.3.0
   installDate: 2026-04-12T14:06:25.979Z
-  lastUpdated: 2026-04-12T14:06:25.979Z
+  lastUpdated: 2026-04-17T14:11:44.808Z
 modules:
   - name: core
     version: 6.3.0
     installDate: 2026-04-12T14:06:25.901Z
-    lastUpdated: 2026-04-12T14:06:25.979Z
+    lastUpdated: 2026-04-17T14:11:44.807Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
     version: 6.3.0
     installDate: 2026-04-12T14:06:25.957Z
-    lastUpdated: 2026-04-12T14:06:25.979Z
+    lastUpdated: 2026-04-17T14:11:44.808Z
     source: built-in
     npmPackage: null
     repoUrl: null
 ides:
-  - pi
-  - codex
   - claude-code
+  - codex
+  - pi
