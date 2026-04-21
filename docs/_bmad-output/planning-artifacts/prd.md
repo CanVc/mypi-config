@@ -7,6 +7,7 @@ inputDocuments:
   - "docs/_bmad-output/planning-artifacts/research/agentic-tdd-story-example-workflow-2026-04-13.md"
   - "docs/_bmad-output/planning-artifacts/research/agentic-tdd-story-v1-open-implementation-questions-2026-04-14.md"
 workflowType: 'prd'
+date: '2026-04-14'
 briefCount: 1
 researchCount: 4
 brainstormingCount: 0
@@ -81,11 +82,11 @@ This is a personal productivity tool. Business success equates to user success: 
 
 ### MVP — v1
 
-Pi harness + standard BMAD workflows (dev-story, code-review) + multi-model routing. Acceptance test: a real story from an external project completes with good quality.
+Pi harness + standard BMAD workflows (dev-story, code-review) + multi-model routing. v1 explicitly excludes TDD-derived workflow variants and runtime-proof execution. Acceptance test: a real story from an external project completes with good quality.
 
 ### Growth — v2
 
-v1 + derived TDD/ATDD/TDAD workflows. Story profiles determine which workflow variant runs. Research artifacts from `/research/` feed directly into workflow design.
+v1 + derived TDD/ATDD/TDAD workflows. Story profiles determine which workflow variant runs. Runtime proof and test-architected batch execution enter scope in this phase. Research artifacts from `/research/` feed directly into workflow design.
 
 ### Vision — v3
 
@@ -200,6 +201,27 @@ A Pi/BMAD power user finds the repo. They run the configurator, answer a few que
 
 `mypi-config` is a Pi-based execution harness distributed as a project scaffold. It is installed on top of an existing BMAD setup, not as a standalone product. The unit of distribution is a set of Pi configuration files, TypeScript extensions, and derived BMAD workflow files that extend a target project without replacing its base tooling.
 
+### Language / Runtime Support
+
+Primary target environment is a local Ubuntu developer workstation. v1 support is defined for a single advanced builder running Pi against BMAD artifacts inside a repository-local setup.
+
+**Supported runtime surfaces:**
+- Pi execution environment
+- BMAD markdown artifacts as workflow inputs
+- Shell-based bootstrap into a target repository
+- Repository-local config files and agent definitions
+
+**Compatibility boundary:**
+- BMAD v6 base install is required before bootstrap
+- Pi compatibility target is version `0.67.2` plus the latest approved stable Pi version
+- Ubuntu is the primary supported operating environment for v1
+
+**Explicit non-goals for v1:**
+- Guaranteed Windows support
+- Multi-user or team coordination semantics
+- Hosted control plane or centralized workflow service
+- Automated cross-version migration tooling
+
 ### Prerequisites
 
 | Dependency | Required Version | Notes |
@@ -225,15 +247,77 @@ Constraint: a developer with repo access must be able to complete the full insta
 
 Exact bootstrap mechanism (shell script, submodule, or copy) to be decided in architecture phase.
 
-### Configuration Surface
+### Exposed Surface
 
-No mandatory configuration is required after bootstrap. Model assignments are embedded in each agent's definition file. To change a model for a given stage, the user edits the relevant agent file directly.
+The harness exposes a narrow builder-facing surface rather than a general-purpose automation platform.
+
+**Primary inputs:**
+- BMAD story files
+- Project-local harness configuration
+- Installed Pi model declarations
+
+**Primary outputs:**
+- Workflow execution artifacts
+- Review outputs and findings
+- Logs and execution evidence by phase
+
+**User-visible operations:**
+- Bootstrap the harness into a target project
+- Run a standard BMAD workflow through the harness
+- Select an available workflow/profile when applicable
+- Inspect workflow status and execution outputs
+- Change per-role model assignment
+
+**Configuration surface:**
+- Agent role definitions
+- Workflow/profile selection
+- Model assignment by role
+- Bounded execution and retry settings
+
+**Explicitly out of v1 exposed surface:**
+- Interactive workflow configurator
+- Generalized conversational orchestration mode
+- Arbitrary non-story task routing
 
 The harness ships fully configured with opinionated defaults — zero required edits to run the first workflow.
 
-### Workflow Examples
+### Usage Examples
 
-Reference workflow examples and artifact specifications exist in `/research/` and serve as the primary design input for derived workflow implementation.
+The PRD uses outcome-level examples to define what a usable developer tool must support.
+
+- A builder installs the harness into a BMAD-ready project and runs the first story without additional mandatory edits.
+- A builder runs `dev-story` on a standard BMAD story with the harness routing each stage to the configured role/model pair.
+- A builder inspects review output, logs, and quality-gate results after a standard story loop completes.
+- A builder changes the model assigned to review without changing workflow logic.
+- A builder installs the same harness in a second project without rebuilding orchestration manually.
+
+Reference workflow examples and artifact specifications in `/research/` remain primary design inputs for v2 derived workflows.
+
+### Migration / Adoption Path
+
+`mypi-config` is intended to be adopted by a builder who already has BMAD familiarity and may be migrating from a Claude Code-style personal workflow.
+
+**Adoption path for v1:**
+1. Install Pi
+2. Declare required models in Pi
+3. Install BMAD v6 in the target project
+4. Bootstrap `mypi-config`
+5. Run a first validation story through the standard harness path
+
+**Migration expectations:**
+- Existing BMAD story artifacts do not need to be rewritten
+- Standard BMAD workflows remain available
+- `mypi-config` adds orchestration and role/model discipline on top of the BMAD base
+
+**Primary migration risks:**
+- Local toolchain mismatch on a near-clean Ubuntu workstation
+- Model declaration/configuration errors
+- Bootstrap assumptions not met in the target repository
+
+**Adoption success looks like:**
+- First story completes end-to-end
+- Outputs are inspectable
+- No per-project orchestration rebuild is required
 
 ## Project Scoping & Phased Development
 
@@ -256,6 +340,7 @@ Reference workflow examples and artifact specifications exist in `/research/` an
 - Fresh-context handoff between stages
 - Quality gates: tests pass, lint clean, two review passes with no blocking findings
 - Iteration cap per story (standard dev-review loop)
+- TDD-derived workflows, test-architect roles, and runtime proof are explicitly out of v1 scope
 
 ### Post-MVP Features
 
@@ -307,7 +392,7 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 
 ### Agent Orchestration
 
-- FR9: Harness can launch each workflow stage with a fresh, bounded context assembled from story artifacts
+- FR9: Harness can launch each workflow stage from an isolated context assembled only from the current story, declared supporting artifacts, and the previous stage's approved outputs
 - FR10: Harness can route each workflow stage to the model defined in the corresponding agent file
 - FR11: Harness can enforce an iteration cap per story and stop execution when the cap is reached
 - FR12: Harness can escalate to the builder when an iteration cap is hit
@@ -318,18 +403,17 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 - FR14: Harness can verify lint passes cleanly before accepting story completion
 - FR15: Harness can block story completion if any review pass returns blocking findings
 
-### Pi Extension Layer *(v1)*
+### Orchestration & Interface Layer *(v1)*
 
-- FR16: Builder can wire a multi-agent team via a Pi TypeScript extension (orchestrator + named sub-agents)
-- FR17: Builder can launch a sub-agent with a fresh context even within an active iteration loop (no inherited conversation history from prior batches)
-- FR18: Builder can configure Pi UI layout and display per agent team (which agents are visible, their role labels)
-- FR19: Builder can observe in the Pi UI which sub-agent is currently active and what it is doing
-- FR20: In formal TDD workflows, sub-agents consume BMAD markdown artifacts (story file, batch files, test plan) directly as their context source — the orchestrator routes by pointing to the right files, not by reconstructing content
-- FR21: In informal or conversational workflows, the orchestrator can pass context directly as message content to a sub-agent when no canonical artifact is available
+- FR16: Builder can run a named multi-agent workflow with defined stage order, assigned roles, and explicit handoff boundaries
+- FR17: Builder can start a sub-agent run without inheriting prior batch conversation history
+- FR18: Builder can configure which workflow roles are visible during execution and how their status is grouped in the interface
+- FR19: Builder can see which workflow role is active and the current stage it is executing
+- FR20: In formal TDD workflows, orchestrated roles can use story artifacts as their primary context source
 - FR22: Builder can assign a distinct model to each sub-agent within the same team
 - FR23: Orchestrator can route the output of one sub-agent as the input to another in a defined sequence
-- FR24: Builder can define a descriptive activity title for a Pi terminal session, visible in the terminal UI — used to identify which agent is running in which terminal when multiple sessions run in parallel
-- FR25: Builder can view a task/todo list in the Pi UI that tracks the current workflow's pending, in-progress, and completed tasks
+- FR24: Builder can label a running workflow session so concurrent executions are distinguishable
+- FR25: Builder can view workflow task state as pending, in-progress, and completed
 
 ### TDD Workflow *(v2)*
 
@@ -363,15 +447,15 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 
 ### Security
 
-- LLM provider API keys are never hardcoded in agent definition files or committed to the repository
+- No committed agent or workflow definition file contains plaintext provider API keys; this is verified by repository secret scanning on every main-branch change
 - Each agent/workflow profile explicitly declares its allowed active tools, and no tool outside that allowlist can be invoked during execution; static validation passes for 100% of profiles
-- The bootstrap process does not require elevated (root) permissions
+- Bootstrap completes on a clean Ubuntu workstation without `sudo` during the harness installation phase
 
 ### Integration
 
-- A smoke suite (bootstrap + standard workflow run) passes at 100% on Pi 0.67.2 and the latest tested stable Pi version in a clean environment
+- The smoke suite passes in 100% of 3 consecutive clean-run executions on Pi 0.67.2 and the latest approved stable Pi version
 - On a clean BMAD v6 base installation, 100% of reference derived workflows install and execute without manual file edits
-- Story files produced by standard BMAD story creation are valid inputs to the harness without modification
+- 100% of sampled standard BMAD story files in the compatibility suite execute as valid workflow inputs without manual edits
 
 ### Reliability
 
@@ -383,3 +467,4 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 - Agent definition files are readable and editable without knowledge of Pi internals — a builder can change a model assignment in under 2 minutes
 - Every Pi TypeScript extension follows the standard extension template and passes lint/typecheck at 100%; non-conforming extensions fail CI validation
 - A builder familiar with BMAD identifies trigger, phases, and output artifacts in a derived workflow in ≤10 minutes; success rate is ≥80% across 3 internal reviewers
+

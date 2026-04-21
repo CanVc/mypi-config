@@ -25,7 +25,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-The project defines 41 functional requirements across nine major capability areas: bootstrap/setup, workflow execution, agent orchestration, quality gates, Pi extension support, TDD workflow support, runtime verification, auditability, and advanced configuration.
+The project defines 40 functional requirements across nine major capability areas: bootstrap/setup, workflow execution, agent orchestration, quality gates, orchestration/interface support, TDD workflow support, runtime verification, auditability, and advanced configuration.
 
 Architecturally, these requirements imply that the system is not a single workflow script but a configurable execution harness with clear phase boundaries. The architecture must support:
 - a canonical story-driven execution model,
@@ -70,7 +70,7 @@ Known constraints and dependencies identified from the source documents:
 - Workflow stages must prefer fresh, bounded context over long shared session history.
 - Hooks and shell-executing behaviors must remain scoped and auditable.
 - Ubuntu is the primary environment target.
-- Playwright and broader runtime verification are future-facing but already influence the architecture.
+- Playwright and broader runtime verification are future-facing and enter the architecture explicitly in v2, not in the v1 bootstrap surface.
 - The architecture must support a bootstrap/install mechanism that is fast and repeatable across projects.
 
 ### Cross-Cutting Concerns Identified
@@ -119,7 +119,7 @@ Selected. Best fit for Pi, BMAD, greenfield/brownfield copy-based install, and e
 - extension logic lives in TypeScript
 - framework deps stay inside the project, isolated in the extension folder
 - works for greenfield and brownfield installs
-- preserves BMAD v1 while allowing Pi/BMAD v2 additions beside it
+- preserves the standard BMAD base while allowing v2 additions beside it
 
 **Initialization model:**
 Copy the project-local Pi scaffold into the target repository. Bootstrap hardening and overwrite rules should be handled in the first implementation story.
@@ -153,14 +153,23 @@ Copy the project-local Pi scaffold into the target repository. Bootstrap hardeni
 .pi/
   agents/
     orchestrator.md
-    red.md
+    implementer.md
+    reviewer-a.md
+    reviewer-b.md
+    # v2 additions:
+    test-architect.md
+    test-writer.md
     red-validator.md
-    green.md
     green-validator.md
-    reviewer-gpt.md
-    reviewer-opus.md
 
   skills/
+    bmad-dev-story-harness/
+      SKILL.md
+      ...
+    bmad-code-review-harness/
+      SKILL.md
+      ...
+    # v2 additions:
     bmad-dev-story-tdd/
       SKILL.md
       ...
@@ -241,7 +250,7 @@ Verified during evaluation:
 - Agent context is provided through artifact file paths, not reconstructed summaries.
 - Agent roles are defined in Markdown; workflow method is defined in BMAD skills; runtime mechanics live in Pi extensions.
 - Artifact structure is standardized and documented in a framework-owned reference file.
-- Session reuse is tightly restricted to same-role intra-batch repair loops only.
+- Session reuse is tightly restricted to same-role repair loops only; v2 may specialize this into batch-level TDD retries.
 
 **Important Decisions (Shape Architecture):**
 - Agents do not communicate directly with each other.
@@ -260,15 +269,19 @@ Verified during evaluation:
 There is no conventional application database in v1. The primary durable data plane is the Markdown artifact set produced and consumed by the workflow.
 
 **Source of truth:**
-- story artifact
-- test plan
-- batch artifacts
-- validation findings
-- orchestrator log
-- status-bearing structured Markdown sections
+- v1 core:
+  - story artifact
+  - review outputs / validation findings
+  - execution log
+  - status-bearing structured Markdown sections
+- v2 additions:
+  - test plan
+  - batch artifacts
+  - orchestrator log
+  - runtime-proof artifacts
 
 **Decision:**
-Use structured Markdown artifacts as the only durable workflow state. No separate workflow database or sidecar machine-state file is introduced for MVP.
+Use structured Markdown artifacts as the only durable workflow state. No separate workflow database or sidecar machine-state file is introduced for MVP. The minimum v1 artifact contract stays compatible with standard BMAD story execution; v2 extends that contract with TDD-specific artifacts.
 
 **Rationale:**
 - aligns with BMAD
@@ -371,9 +384,7 @@ A free-form LLM orchestrator is not the decision-maker.
 All agents start in fresh context.
 
 **Allowed exceptions:**
-Session reuse is permitted only in these two cases:
-1. return to `red` after rejection by `red-validator`
-2. return to `green` after rejection by `green-validator`
+Session reuse is permitted only for same-role repair loops explicitly authorized by the orchestrator. In v2 TDD flows, this includes bounded retry loops within a batch.
 
 **Always fresh:**
 - validators
@@ -381,7 +392,7 @@ Session reuse is permitted only in these two cases:
 - final review loops in general
 
 **Reasoning:**
-This preserves artifact-first discipline while allowing efficient local repair loops for small batches.
+This preserves artifact-first discipline while allowing efficient local repair loops where they materially reduce churn. v1 keeps this generic; v2 applies it to batch-oriented TDD loops.
 
 ### Artifact Reference Model
 
@@ -394,7 +405,7 @@ This file defines:
 - artifact layout
 - required sections
 - status conventions
-- how agents find current batch, findings, and next-action signals
+- how agents find the current workflow phase, findings, and next-action signals
 
 Agents do not duplicate the full artifact specification in their own `.md` files. They only describe role-specific reading behavior.
 
@@ -418,13 +429,14 @@ When such a condition occurs, the system must escalate to a human.
 ### Decision Impact Analysis
 
 **Implementation Sequence:**
-1. Define artifact format contract in `.pi/references/artifact-format.md`
+1. Define the v1 artifact contract in `.pi/references/artifact-format.md`
 2. Implement generic dispatch tool in the Pi extension layer
 3. Implement deterministic orchestrator transition rules
-4. Define agent role files in `.pi/agents/`
-5. Define BMAD workflow skills that read/write the artifact set
-6. Add validator output classification and escalation rules
+4. Define v1 agent role files in `.pi/agents/`
+5. Define harness skills for standard BMAD workflow execution
+6. Add validator/review output classification and escalation rules
 7. Add optional operator UI widgets for visibility
+8. Extend the artifact contract and role set for v2 TDD workflows
 
 **Cross-Component Dependencies:**
 - agent role files depend on the artifact contract
@@ -454,12 +466,13 @@ The main consistency risks are not database or UI conflicts, but workflow and ar
 - Agent identifiers use lowercase kebab-case
 - Examples:
   - `orchestrator`
-  - `red`
+  - `implementer`
+  - `reviewer-a`
+  - `reviewer-b`
+  - `test-architect`
+  - `test-writer`
   - `red-validator`
-  - `green`
   - `green-validator`
-  - `reviewer-gpt`
-  - `reviewer-opus`
 
 **Rules:**
 - agent file name must match agent identifier
@@ -508,12 +521,16 @@ Recommended structure:
 Workflow artifacts must be organized so the orchestrator and all agents can locate the current story state deterministically.
 
 Minimum artifact set:
-- story artifact
-- test plan
-- batch artifacts
-- validation findings section(s)
-- orchestrator log
-- status-bearing structured sections
+- v1 core:
+  - story artifact
+  - review artifacts / validation findings section(s)
+  - execution log
+  - status-bearing structured sections
+- v2 additions:
+  - test plan
+  - batch artifacts
+  - orchestrator log
+  - runtime-proof
 
 ### Format Patterns
 
@@ -533,8 +550,8 @@ Status must be encoded in structured Markdown conventions, not free prose.
 - status fields must come from a fixed vocabulary
 - transition-relevant fields must be parseable deterministically
 - artifact structure must support locating:
-  - current batch
-  - current gate
+  - current phase
+  - current batch when applicable
   - next expected role
   - open findings
   - retry count or equivalent bounded-loop signal
@@ -593,13 +610,12 @@ Example shape:
 
 ```json
 {
-  "agent": "green",
+  "agent": "reviewer-a",
   "sessionMode": "fresh",
-  "task": "Implement the current batch according to the story and findings",
+  "task": "Review the current story implementation and write structured findings",
   "artifacts": [
     "story.md",
-    "test-plan.md",
-    "batch-02.md"
+    "review-a.md"
   ]
 }
 ```
@@ -615,8 +631,8 @@ Example shape:
 - all agents start fresh by default
 
 **Allowed resume cases only:**
-- return to `red` after `red-validator` rejection
-- return to `green` after `green-validator` rejection
+- rerun the same implementation role after structured rejection
+- rerun the same review/validation role only when the orchestrator explicitly authorizes repair in place
 
 **Always fresh:**
 - validators
@@ -666,9 +682,9 @@ Examples include:
 ### Pattern Examples
 
 **Good Examples:**
-- `green-validator` writes a finding classified as `implementation-issue` and recommends `rerun-green`
-- orchestrator reads updated artifact state and dispatches `green`
-- `red` and `green` may resume only within same-role retry loops
+- `reviewer-a` writes structured findings classified as `implementation-issue`
+- orchestrator reads updated artifact state and dispatches the next allowed role
+- the same role may resume only within explicitly bounded repair loops
 - final reviewer always starts fresh from artifacts
 
 **Anti-Patterns:**
@@ -684,83 +700,94 @@ Examples include:
 
 ```text
 mypi-config/
-├── README.md
-├── AGENTS.md
-├── .gitignore
-├── .pi/
-│   ├── settings.json
-│   ├── references/
-│   │   ├── artifact-format.md
-│   │   └── workflow-status-codes.md
-│   ├── agents/
-│   │   ├── orchestrator.md
-│   │   ├── red.md
-│   │   ├── red-validator.md
-│   │   ├── green.md
-│   │   ├── green-validator.md
-│   │   ├── reviewer-gpt.md
-│   │   └── reviewer-opus.md
-│   ├── skills/
-│   │   ├── bmad-create-story-tdd/
-│   │   │   ├── SKILL.md
-│   │   │   ├── workflow.md
-│   │   │   ├── steps/
-│   │   │   └── templates/
-│   │   ├── bmad-dev-story-tdd/
-│   │   │   ├── SKILL.md
-│   │   │   ├── workflow.md
-│   │   │   ├── steps/
-│   │   │   └── templates/
-│   │   └── bmad-code-review-tdd/
-│   │       ├── SKILL.md
-│   │       ├── workflow.md
-│   │       ├── steps/
-│   │       └── templates/
-│   └── extensions/
-│       └── bmad-orchestrator/
-│           ├── package.json
-│           ├── tsconfig.json
-│           ├── src/
-│           │   ├── index.ts
-│           │   ├── dispatch-subagent.ts
-│           │   ├── transition-rules.ts
-│           │   ├── artifact-reader.ts
-│           │   ├── artifact-writer.ts
-│           │   ├── session-policy.ts
-│           │   ├── validator-routing.ts
-│           │   ├── escalation-rules.ts
-│           │   ├── types.ts
-│           │   └── ui/
-│           │       └── status-widget.ts
-│           └── tests/
-│               ├── transition-rules.test.ts
-│               ├── session-policy.test.ts
-│               └── validator-routing.test.ts
-├── scripts/
-│   ├── bootstrap-into-project.sh
-│   ├── detect-prereqs.sh
-│   └── verify-workstation.sh
-└── docs/
-    └── _bmad-output/
-        ├── planning-artifacts/
-        │   ├── product-brief-mypi-config.md
-        │   ├── prd.md
-        │   └── architecture.md
-        └── implementation-artifacts/
-            └── stories/
-                └── <story-id>/
-                    ├── story.md
-                    ├── test-plan.md
-                    ├── batches/
-                    │   ├── batch-01.md
-                    │   ├── batch-02.md
-                    │   └── batch-03.md
-                    ├── orchestrator-log.md
-                    ├── review-a.md
-                    ├── review-b.md
-                    └── runtime-proof/
+|-- README.md
+|-- AGENTS.md
+|-- .gitignore
+|-- .pi/
+|   |-- settings.json
+|   |-- references/
+|   |   |-- artifact-format.md
+|   |   `-- workflow-status-codes.md
+|   |-- agents/
+|   |   |-- orchestrator.md
+|   |   |-- implementer.md
+|   |   |-- reviewer-a.md
+|   |   |-- reviewer-b.md
+|   |   |-- test-architect.md
+|   |   |-- test-writer.md
+|   |   |-- red-validator.md
+|   |   `-- green-validator.md
+|   |-- skills/
+|   |   |-- bmad-dev-story-harness/
+|   |   |   |-- SKILL.md
+|   |   |   |-- workflow.md
+|   |   |   |-- steps/
+|   |   |   `-- templates/
+|   |   |-- bmad-code-review-harness/
+|   |   |   |-- SKILL.md
+|   |   |   |-- workflow.md
+|   |   |   |-- steps/
+|   |   |   `-- templates/
+|   |   |-- bmad-create-story-tdd/
+|   |   |   |-- SKILL.md
+|   |   |   |-- workflow.md
+|   |   |   |-- steps/
+|   |   |   `-- templates/
+|   |   |-- bmad-dev-story-tdd/
+|   |   |   |-- SKILL.md
+|   |   |   |-- workflow.md
+|   |   |   |-- steps/
+|   |   |   `-- templates/
+|   |   `-- bmad-code-review-tdd/
+|   |       |-- SKILL.md
+|   |       |-- workflow.md
+|   |       |-- steps/
+|   |       `-- templates/
+|   `-- extensions/
+|       `-- bmad-orchestrator/
+|           |-- package.json
+|           |-- tsconfig.json
+|           |-- src/
+|           |   |-- index.ts
+|           |   |-- dispatch-subagent.ts
+|           |   |-- transition-rules.ts
+|           |   |-- artifact-reader.ts
+|           |   |-- artifact-writer.ts
+|           |   |-- session-policy.ts
+|           |   |-- validator-routing.ts
+|           |   |-- escalation-rules.ts
+|           |   |-- types.ts
+|           |   `-- ui/
+|           |       `-- status-widget.ts
+|           `-- tests/
+|               |-- transition-rules.test.ts
+|               |-- session-policy.test.ts
+|               `-- validator-routing.test.ts
+|-- scripts/
+|   |-- bootstrap-into-project.sh
+|   |-- detect-prereqs.sh
+|   `-- verify-workstation.sh
+`-- docs/
+    `-- _bmad-output/
+        |-- planning-artifacts/
+        |   |-- product-brief-mypi-config.md
+        |   |-- prd.md
+        |   `-- architecture.md
+        `-- implementation-artifacts/
+            `-- stories/
+                `-- <story-id>/
+                    |-- story.md
+                    |-- review-a.md
+                    |-- review-b.md
+                    |-- execution-log.md
+                    |-- test-plan.md
+                    |-- batches/
+                    |   |-- batch-01.md
+                    |   |-- batch-02.md
+                    |   `-- batch-03.md
+                    |-- orchestrator-log.md
+                    `-- runtime-proof/
 ```
-
 ### Architectural Boundaries
 
 **Framework Boundary:**
@@ -788,9 +815,12 @@ mypi-config/
 - `.pi/extensions/bmad-orchestrator/`
 
 **Workflow Execution Requirements:**
-- `.pi/skills/bmad-dev-story-tdd/`
-- `.pi/skills/bmad-create-story-tdd/`
-- `.pi/skills/bmad-code-review-tdd/`
+- `.pi/skills/bmad-dev-story-harness/`
+- `.pi/skills/bmad-code-review-harness/`
+- future v2 additions:
+  - `.pi/skills/bmad-create-story-tdd/`
+  - `.pi/skills/bmad-dev-story-tdd/`
+  - `.pi/skills/bmad-code-review-tdd/`
 
 **Agent Orchestration Requirements:**
 - `.pi/extensions/bmad-orchestrator/src/index.ts`
@@ -801,12 +831,14 @@ mypi-config/
 
 **Agent Role Definitions:**
 - `.pi/agents/orchestrator.md`
-- `.pi/agents/red.md`
-- `.pi/agents/red-validator.md`
-- `.pi/agents/green.md`
-- `.pi/agents/green-validator.md`
-- `.pi/agents/reviewer-gpt.md`
-- `.pi/agents/reviewer-opus.md`
+- `.pi/agents/implementer.md`
+- `.pi/agents/reviewer-a.md`
+- `.pi/agents/reviewer-b.md`
+- future v2 additions:
+  - `.pi/agents/test-architect.md`
+  - `.pi/agents/test-writer.md`
+  - `.pi/agents/red-validator.md`
+  - `.pi/agents/green-validator.md`
 
 **Artifact Contract & Consistency Rules:**
 - `.pi/references/artifact-format.md`
@@ -814,13 +846,14 @@ mypi-config/
 
 **Execution State & Auditability:**
 - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/story.md`
-- `docs/_bmad-output/implementation-artifacts/stories/<story-id>/test-plan.md`
-- `docs/_bmad-output/implementation-artifacts/stories/<story-id>/batches/`
-- `docs/_bmad-output/implementation-artifacts/stories/<story-id>/orchestrator-log.md`
 - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/review-a.md`
 - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/review-b.md`
-- `docs/_bmad-output/implementation-artifacts/stories/<story-id>/runtime-proof/`
-
+- `docs/_bmad-output/implementation-artifacts/stories/<story-id>/execution-log.md`
+- future v2 additions:
+  - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/test-plan.md`
+  - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/batches/`
+  - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/orchestrator-log.md`
+  - `docs/_bmad-output/implementation-artifacts/stories/<story-id>/runtime-proof/`
 ### Integration Points
 
 **Internal Communication:**
@@ -882,7 +915,7 @@ mypi-config/
 **Deployment Structure:**
 - the deployable/installable unit is the project-local `.pi/` scaffold plus helper scripts
 - brownfield install should update framework-owned `.pi/` assets while preserving project-owned assets
-- BMAD v1-compatible assets must not be overwritten destructively
+- standard BMAD-compatible assets must not be overwritten destructively
 
 ## Architecture Validation Results
 
@@ -934,7 +967,7 @@ All major FR areas are covered architecturally:
 - workflow execution
 - agent orchestration
 - quality gates
-- Pi extension support
+- orchestration/interface support
 - TDD workflow support
 - runtime verification preparation
 - auditability
@@ -1071,3 +1104,4 @@ The architecture is considered implementation-ready with the following clarifica
 2. define `.pi/references/workflow-status-codes.md`
 3. implement the generic dispatch tool
 4. implement deterministic transition rules in the extension
+
