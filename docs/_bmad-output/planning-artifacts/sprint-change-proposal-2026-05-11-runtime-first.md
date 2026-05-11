@@ -83,7 +83,7 @@ MVP scope is unchanged. Only implementation order and story numbering changed.
 - FR9, FR10, FR16-FR19, and FR21-FR25 now map to Epic 1.
 - Former runtime stories 2.1-2.6 are now 1.1-1.6.
 - Former bootstrap stories 1.1-1.6 are now 2.1-2.6.
-- Story 1.1 now allows creation of the `bmad-orchestrator` extension scaffold as part of dispatch-tool implementation.
+- Story 1.1 now integrates the pinned marketplace `pi-subagents` package as the dispatch substrate and explicitly avoids creating a custom `bmad-orchestrator` dispatch extension.
 
 ### `prd.md`
 
@@ -96,11 +96,12 @@ Added/updated v1 sequencing constraint:
 Updated implementation sequence:
 
 1. Build observable multi-agent runtime first
-2. Define artifact and status contracts
-3. Implement generic dispatch and deterministic transitions
-4. Prove two-agent runtime smoke scenario
-5. Package/harden portable bootstrap
-6. Proceed to standard BMAD workflow/review gates
+2. Pin and validate `pi-subagents` as the generic dispatch substrate
+3. Define parent-session BMAD orchestration guidance plus artifact/status contracts
+4. Add deterministic guardrails only where needed
+5. Prove two-agent runtime smoke scenario
+6. Package/harden portable bootstrap
+7. Proceed to standard BMAD workflow/review gates
 
 ### `sprint-status.yaml`
 

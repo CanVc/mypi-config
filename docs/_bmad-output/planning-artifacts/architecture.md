@@ -92,7 +92,8 @@ The following concerns will affect multiple architectural components:
 ### Primary Technology Domain
 
 Pi-native local developer tooling scaffold built from:
-- Pi extensions in TypeScript
+- Pi packages for reusable runtime capabilities such as `pi-subagents`
+- optional Pi extensions in TypeScript for custom guardrails
 - Pi agents in Markdown
 - Pi skills for BMAD workflows
 - local-only execution with no separate UI
@@ -107,17 +108,17 @@ Rejected for v1. Pi already provides the runtime, TUI, commands, and session mod
 **2. Generic TypeScript package starter**  
 Useful as a technical base, but insufficient on its own because it does not define the Pi-specific layout.
 
-**3. Custom project-local Pi scaffold with embedded extension package**  
-Selected. Best fit for Pi, BMAD, greenfield/brownfield copy-based install, and editable agent definitions.
+**3. Custom project-local Pi scaffold with pinned Pi packages and optional embedded extension packages**
+Selected. Best fit for Pi, BMAD, greenfield/brownfield copy-based install, marketplace runtime reuse, and editable agent definitions.
 
 ### Selected Starter: Custom Project-Local Pi Scaffold
 
 **Why this starter:**
 - Pi stays the execution shell and TUI
-- sub-agents run as isolated `pi` subprocesses
+- sub-agents run as isolated child Pi sessions through `pi-subagents`
 - agents stay editable in Markdown
-- extension logic lives in TypeScript
-- framework deps stay inside the project, isolated in the extension folder
+- custom extension logic lives in TypeScript only where hard guardrails are needed
+- framework deps stay project-local through pinned Pi packages or, for custom code, isolated in the owning extension folder
 - works for greenfield and brownfield installs
 - preserves the standard BMAD base while allowing v2 additions beside it
 
@@ -127,7 +128,8 @@ Build the repository-local multi-agent runtime first, then package the project-l
 **Architectural Decisions Provided by Starter:**
 
 **Language & Runtime:**
-- TypeScript for Pi extensions
+- Pi packages for reusable runtime capabilities such as `pi-subagents`
+- TypeScript for Pi extensions only when custom deterministic guardrails are needed
 - Markdown for Pi agents
 - Markdown skill folders for BMAD workflows
 - Node.js runtime
@@ -138,9 +140,10 @@ Build the repository-local multi-agent runtime first, then package the project-l
 - any workflow UI is implemented through Pi extensions
 
 **Build Tooling:**
-- no mandatory build step for extension loading
-- Pi loads TypeScript extensions directly
-- package.json in the extension folder is used only for that extension's Node dependencies
+- no mandatory build step for package or extension loading
+- Pi installs project-local packages declared in `.pi/settings.json`
+- Pi loads TypeScript extensions directly when custom extensions exist
+- package.json in an extension folder is used only for that extension's Node dependencies
 
 **Testing:**
 - no mandatory test framework in the starter
@@ -148,7 +151,7 @@ Build the repository-local multi-agent runtime first, then package the project-l
 - Playwright is not part of the v1 starter
 
 **Extension Validation Contract:**
-- Each Pi TypeScript extension must define extension-local validation scripts in its own `package.json`.
+- Each framework-owned Pi TypeScript extension, when introduced for custom guardrails, must define extension-local validation scripts in its own `package.json`.
 - Required extension-local scripts are:
   - `typecheck`
   - `lint`
@@ -164,7 +167,6 @@ Build the repository-local multi-agent runtime first, then package the project-l
 ```text
 .pi/
   agents/
-    orchestrator.md
     implementer.md
     reviewer-a.md
     reviewer-b.md
@@ -175,6 +177,8 @@ Build the repository-local multi-agent runtime first, then package the project-l
     green-validator.md
 
   skills/
+    bmad-orchestrator/
+      SKILL.md
     bmad-dev-story-harness/
       SKILL.md
       ...
@@ -186,16 +190,17 @@ Build the repository-local multi-agent runtime first, then package the project-l
       SKILL.md
       ...
 
+  settings.json  # pins packages such as npm:pi-subagents@<version>
+
   extensions/
-    bmad-orchestrator/
-      package.json
-      index.ts
+    # optional later custom guardrail extensions, not required for Story 1.1 dispatch
 ```
 
 **Dependency Strategy:**
-- Node dependencies live in the extension folder
-- Pi discovers the extension by its location, not by `package.json`
-- this isolates framework deps from the host project root
+- Reusable runtime dependencies should be declared as pinned Pi packages in project settings.
+- `pi-subagents` is the selected sub-agent dispatch substrate for Story 1.1.
+- Custom Node dependencies live in the owning extension folder only when a custom extension is introduced.
+- This isolates framework deps from the host project root.
 
 ### Current Workstation Baseline
 
@@ -256,18 +261,18 @@ Verified during evaluation:
 
 **Critical Decisions (Block Implementation):**
 - Architecture is artifact-first: Markdown artifacts are the durable source of truth.
-- Agent communication is vertical through the orchestrator only.
-- Orchestration decisions are deterministic and enforced by the Pi extension layer.
-- Pi sub-agents are launched through a generic dispatch tool.
-- Agent context is provided through artifact file paths, not reconstructed summaries.
-- Agent roles are defined in Markdown; workflow method is defined in BMAD skills; runtime mechanics live in Pi extensions.
+- Agent communication is vertical through the parent orchestrator only.
+- Initial BMAD orchestration is parent-session guidance; later deterministic guardrails may be enforced by a Pi extension when workflow transitions need hard validation.
+- Pi sub-agents are launched through the marketplace `pi-subagents` package and its generic `subagent(...)` tool.
+- Agent context is provided through direct task text for informal workflows and artifact file paths for formal workflows, not reconstructed summaries.
+- Agent roles are defined in Markdown; workflow method is defined in BMAD skills; runtime mechanics should use Pi packages first and custom Pi extensions only where needed.
 - Artifact structure is standardized and documented in a framework-owned reference file.
-- Session reuse is tightly restricted to same-role repair loops only; v2 may specialize this into batch-level TDD retries.
+- Session reuse is tightly restricted to explicit repair/resume cases; v2 may specialize this into batch-level TDD retries.
 
 **Important Decisions (Shape Architecture):**
 - Agents do not communicate directly with each other.
 - Runtime completion signals are control-plane only; they do not override artifact truth.
-- Validators recommend through structured artifact outputs; the extension applies deterministic routing rules.
+- Validators recommend through structured artifact outputs; parent guidance or later guardrails apply deterministic routing rules.
 - Final review always runs with fresh context.
 - Artifact specification is stored in `.pi/references/artifact-format.md`.
 
@@ -307,7 +312,8 @@ There is no end-user authentication architecture in scope for v1. Security focus
 
 **Security decisions:**
 - tools and permissions are constrained by role
-- orchestration is enforced in the extension layer
+- child-agent launch uses the pinned `pi-subagents` runtime rather than ad hoc subprocess code
+- parent-session BMAD guidance controls delegation intent, with later extension guardrails if deterministic transition enforcement is required
 - ambiguous or invalid workflow states escalate to a human
 - framework assets stay project-local under `.pi/`
 
@@ -334,23 +340,23 @@ Agents do not communicate directly with one another. All durable communication f
 - makes workflow replay and debugging possible
 
 **Dispatch mechanism:**
-The extension exposes a generic dispatch tool that can launch any named agent with:
+The project declares `pi-subagents` as a pinned Pi package. Its generic `subagent(...)` tool can launch named child agents with:
 - agent name
-- session mode
-- task
-- artifact paths
+- fresh/fork context selection
+- task content
+- artifact path references or read directives
 
-This keeps the runtime generic while allowing higher-level workflow specialization above it.
+This keeps launch mechanics generic while allowing BMAD parent-session guidance and later guardrails to specialize workflow behavior above it.
 
 ### Frontend Architecture
 
 There is no separate frontend or web UI.
 
 **Decision:**
-Pi’s TUI is the operator interface. Any additional UX is implemented through Pi extension widgets, dashboards, status lines, or overlays.
+Pi’s TUI is the operator interface. Any additional UX is implemented through Pi package capabilities, prompt/skill guidance, or optional Pi extension widgets, dashboards, status lines, or overlays.
 
 **Implication:**
-UI concerns remain in the extension layer and do not affect the artifact truth model.
+UI concerns remain outside the durable artifact truth model regardless of whether they come from `pi-subagents` or a later custom extension.
 
 ### Infrastructure & Deployment
 
@@ -379,16 +385,17 @@ Future v2 runtime verification:
 ### Orchestration Model
 
 **Decision:**
-Use a deterministic extension-level orchestrator.
+Use parent-session BMAD orchestration guidance first, backed by `pi-subagents` for child-agent launch. Add deterministic extension guardrails later only where workflow transitions, retry limits, or escalation rules require hard runtime enforcement.
 
 This means:
-- the extension checks preconditions
-- the extension validates allowed transitions
-- the extension applies retry limits
-- the extension routes to the next agent based on structured validator outputs
+- parent guidance checks delegation intent where possible
+- `pi-subagents` owns child-agent process/session launch mechanics
+- later guardrails may validate allowed transitions
+- later guardrails may apply retry limits
+- routing must use structured validator/artifact outputs rather than hidden conversation state
 - if workflow contract violations occur, execution stops and escalates to a human
 
-A free-form LLM orchestrator is not the decision-maker.
+A child `orchestrator.md` agent is not the parent decision-maker and must not be used for nested sub-agent orchestration.
 
 ### Session Memory Policy
 
@@ -441,26 +448,28 @@ When such a condition occurs, the system must escalate to a human.
 ### Decision Impact Analysis
 
 **Implementation Sequence:**
-1. Build the observable multi-agent runtime first, in the repository-local `.pi/` scaffold
-2. Define the v1 artifact contract in `.pi/references/artifact-format.md`
-3. Define workflow status and transition conventions in `.pi/references/workflow-status-codes.md`
-4. Implement the generic dispatch tool in the Pi extension layer
-5. Implement deterministic orchestrator transition rules
+1. Establish the observable multi-agent runtime first, in the repository-local `.pi/` scaffold
+2. Pin and configure `pi-subagents` as the child-agent dispatch substrate
+3. Define parent-session BMAD orchestration guidance that delegates through `subagent(...)`
+4. Define the v1 artifact contract in `.pi/references/artifact-format.md`
+5. Define workflow status and transition conventions in `.pi/references/workflow-status-codes.md`
 6. Define v1 agent role files in `.pi/agents/`
-7. Add model-routing and fresh-context session policy in the runtime
+7. Add model-routing and fresh-context delegation conventions on top of `pi-subagents`
 8. Add task state and optional operator UI widgets for visibility
 9. Prove the runtime with a two-agent smoke scenario
 10. Package and harden the portable bootstrap flow for target-project installation
 11. Define harness skills for standard BMAD workflow execution and review gates
 12. Add validator/review output classification and escalation rules
-13. Extend the artifact contract and role set for v2 TDD workflows
+13. Add custom deterministic extension guardrails only where package/guidance behavior is insufficient
+14. Extend the artifact contract and role set for v2 TDD workflows
 
 **Sequencing Constraint:** Do not treat standard BMAD review execution or portable bootstrap proof as implementation-ready until the Epic 1 runtime exists. Review gates depend on sub-agent dispatch, fresh context, model routing, and observable task state.
 
 **Cross-Component Dependencies:**
+- `pi-subagents` package configuration precedes smokeable child-agent dispatch
 - agent role files depend on the artifact contract
-- skills depend on the artifact contract and orchestrator rules
-- orchestrator logic depends on validator output classification
+- skills depend on the artifact contract and parent-orchestrator rules
+- later deterministic guardrails depend on validator output classification
 - resumability depends on structured artifact state being stable and parseable
 - UI is optional, but orchestration correctness is not
 
@@ -475,7 +484,7 @@ The main consistency risks are not database or UI conflicts, but workflow and ar
 - artifact section naming
 - status and transition encoding
 - validator output classification
-- dispatch tool input format
+- `pi-subagents` delegation contract and BMAD usage conventions
 - framework file placement under `.pi/`
 - logging and decision recording conventions
 
@@ -523,15 +532,17 @@ Recommended structure:
 
 ```text
 .pi/
+  settings.json   # project-local package pins, including pi-subagents
   agents/
-  extensions/
   skills/
   references/
+  extensions/     # optional custom guardrails only
 ```
 
 **Rules:**
 - agent role definitions live in `.pi/agents/`
-- extension runtime logic lives in `.pi/extensions/`
+- project-local package declarations live in `.pi/settings.json`
+- custom extension runtime logic lives in `.pi/extensions/` only when needed
 - workflow/skill logic lives in `.pi/skills/`
 - shared framework references live in `.pi/references/`
 - framework documentation should not be placed in project `docs/` unless intentionally part of the target project documentation
@@ -617,32 +628,31 @@ If runtime output and artifact state disagree, artifacts win.
 ### Dispatch Patterns
 
 **Generic Dispatch Tool:**
-The runtime must expose one generic dispatch mechanism rather than role-specific hardcoded tools.
+The runtime must expose one generic dispatch mechanism rather than role-specific hardcoded tools. The selected mechanism is `pi-subagents` and its `subagent(...)` tool.
 
-Expected input shape includes:
+Expected invocation concepts include:
 - agent identifier
-- session mode
-- task
-- artifact paths
+- context mode, normally `fresh`
+- task text
+- artifact paths passed as paths/read directives, not summaries
 
 Example shape:
 
 ```json
 {
   "agent": "reviewer-a",
-  "sessionMode": "fresh",
-  "task": "Review the current story implementation and write structured findings",
-  "artifacts": [
-    "story.md",
-    "review-a.md"
-  ]
+  "context": "fresh",
+  "task": "Review the current story implementation. Use these artifact paths as source of truth: story.md, review-a.md",
+  "agentScope": "both"
 }
 ```
 
+If supported by the selected `pi-subagents` call form, file paths may also be supplied through its read/output behavior. The parent must not rewrite formal artifacts into lossy summaries.
+
 **Rules:**
-- dispatch tool remains workflow-agnostic
-- workflow-specific routing logic stays above it
-- dispatch payload uses canonical agent names and artifact paths only
+- `subagent(...)` remains workflow-agnostic
+- workflow-specific routing logic stays above it in parent BMAD guidance or later guardrails
+- delegation payloads use canonical agent names and artifact paths only
 
 ### Session Patterns
 
@@ -661,13 +671,13 @@ Example shape:
 ### Process Patterns
 
 **Deterministic Orchestration:**
-The extension layer is the workflow decision engine.
+The parent BMAD orchestrator is the initial workflow decision surface. Where deterministic enforcement is required beyond prompt/skill guidance, a later custom extension may add guardrails.
 
 **Rules:**
-- extension validates preconditions before dispatch
-- extension validates that transition is allowed
-- extension validates retry bounds
-- extension routes only from structured artifact outputs
+- parent guidance validates intent before delegation where possible
+- later guardrails validate that transitions are allowed when automatic routing is introduced
+- later guardrails validate retry bounds when bounded loops are introduced
+- routing decisions are based only on structured artifact outputs
 - ambiguous situations escalate to human instead of being interpreted freely
 
 **Human Escalation Pattern:**
@@ -696,7 +706,7 @@ Examples include:
 - artifact structure is defined centrally in `.pi/references/artifact-format.md`
 - agent role files reference that contract rather than duplicating it
 - workflow skills enforce which artifacts must be read/written
-- extension logic enforces transition validity and session policy
+- `pi-subagents` enforces child-agent launch boundaries; later extension guardrails may enforce transition validity and session policy
 
 ### Pattern Examples
 
@@ -723,12 +733,11 @@ mypi-config/
 |-- AGENTS.md
 |-- .gitignore
 |-- .pi/
-|   |-- settings.json
+|   |-- settings.json        # pins npm:pi-subagents@<approved-version>
 |   |-- references/
 |   |   |-- artifact-format.md
 |   |   `-- workflow-status-codes.md
 |   |-- agents/
-|   |   |-- orchestrator.md
 |   |   |-- implementer.md
 |   |   |-- reviewer-a.md
 |   |   |-- reviewer-b.md
@@ -737,6 +746,8 @@ mypi-config/
 |   |   |-- red-validator.md
 |   |   `-- green-validator.md
 |   |-- skills/
+|   |   |-- bmad-orchestrator/        # parent-session delegation guidance
+|   |   |   `-- SKILL.md
 |   |   |-- bmad-dev-story-harness/
 |   |   |   |-- SKILL.md
 |   |   |   |-- workflow.md
@@ -763,12 +774,10 @@ mypi-config/
 |   |       |-- steps/
 |   |       `-- templates/
 |   `-- extensions/
-|       `-- bmad-orchestrator/
+|       `-- optional custom guardrail extensions only
 |           |-- package.json
 |           |-- tsconfig.json
 |           |-- src/
-|           |   |-- index.ts
-|           |   |-- dispatch-subagent.ts
 |           |   |-- transition-rules.ts
 |           |   |-- artifact-reader.ts
 |           |   |-- artifact-writer.ts
@@ -779,9 +788,6 @@ mypi-config/
 |           |   `-- ui/
 |           |       `-- status-widget.ts
 |           `-- tests/
-|               |-- transition-rules.test.ts
-|               |-- session-policy.test.ts
-|               `-- validator-routing.test.ts
 |-- scripts/
 |   |-- bootstrap-into-project.sh
 |   |-- detect-prereqs.sh
@@ -830,8 +836,8 @@ mypi-config/
 **Bootstrap & Setup Requirements:**
 - `scripts/bootstrap-into-project.sh`
 - `scripts/detect-prereqs.sh`
-- `.pi/settings.json`
-- `.pi/extensions/bmad-orchestrator/`
+- `.pi/settings.json` with pinned Pi package declarations, including `pi-subagents`
+- optional `.pi/extensions/` only for custom guardrails
 
 **Workflow Execution Requirements:**
 - `.pi/skills/bmad-dev-story-harness/`
@@ -842,14 +848,12 @@ mypi-config/
   - `.pi/skills/bmad-code-review-tdd/`
 
 **Agent Orchestration Requirements:**
-- `.pi/extensions/bmad-orchestrator/src/index.ts`
-- `.pi/extensions/bmad-orchestrator/src/dispatch-subagent.ts`
-- `.pi/extensions/bmad-orchestrator/src/transition-rules.ts`
-- `.pi/extensions/bmad-orchestrator/src/session-policy.ts`
-- `.pi/extensions/bmad-orchestrator/src/validator-routing.ts`
+- `.pi/settings.json` package entry for `pi-subagents`
+- `.pi/skills/bmad-orchestrator/SKILL.md` or equivalent parent-session orchestration guidance
+- `.pi/agents/` project agents consumed by `pi-subagents`
+- optional later guardrail extension modules for transition rules, session policy, and validator routing if prompt/package behavior is insufficient
 
 **Agent Role Definitions:**
-- `.pi/agents/orchestrator.md`
 - `.pi/agents/implementer.md`
 - `.pi/agents/reviewer-a.md`
 - `.pi/agents/reviewer-b.md`
@@ -877,9 +881,10 @@ mypi-config/
 
 **Internal Communication:**
 - skills invoke the workflow method
-- extension runtime dispatches agents
+- parent-session BMAD guidance delegates through `subagent(...)`
+- `pi-subagents` dispatches child agents
 - agents read/write Markdown artifacts
-- orchestrator re-reads artifacts and applies deterministic transitions
+- parent orchestration re-reads artifacts and applies workflow guidance or later deterministic guardrails
 
 **External Integrations:**
 - Pi CLI runtime
@@ -889,29 +894,31 @@ mypi-config/
 
 **Data Flow:**
 1. planning artifacts define intent
-2. skill starts workflow
-3. extension verifies preconditions
-4. extension dispatches an agent with artifact paths
-5. agent writes results to artifacts
-6. extension re-reads artifacts
-7. extension routes, retries, or escalates
+2. skill or prompt starts workflow
+3. parent orchestration guidance verifies delegation intent where possible
+4. parent invokes `subagent(...)` with task content and artifact paths
+5. child agent writes results to artifacts
+6. parent re-reads artifacts
+7. parent guidance or later deterministic guardrails route, retry, or escalate
 8. final review writes review artifacts and closure state
 
 ### File Organization Patterns
 
 **Configuration Files:**
-- project-wide Pi behavior: `.pi/settings.json`
-- extension-local Node dependencies: `.pi/extensions/bmad-orchestrator/package.json`
-- extension-local TS config: `.pi/extensions/bmad-orchestrator/tsconfig.json`
+- project-wide Pi behavior and package pins: `.pi/settings.json`
+- optional extension-local Node dependencies: `.pi/extensions/<guardrail-extension>/package.json`
+- optional extension-local TS config: `.pi/extensions/<guardrail-extension>/tsconfig.json`
 
 **Source Organization:**
-- extension runtime source under `.pi/extensions/bmad-orchestrator/src/`
+- parent orchestration guidance under `.pi/skills/` or `.pi/prompts/`
+- optional guardrail extension source under `.pi/extensions/<guardrail-extension>/src/`
 - agent role prompts under `.pi/agents/`
 - workflow method under `.pi/skills/`
 - framework references under `.pi/references/`
 
 **Test Organization:**
-- extension unit tests under `.pi/extensions/bmad-orchestrator/tests/`
+- package/dispatch smoke checks for `pi-subagents` integration
+- optional extension unit tests under `.pi/extensions/<guardrail-extension>/tests/`
 - workflow execution evidence under `docs/_bmad-output/implementation-artifacts/`
 - future runtime verification evidence under each story’s `runtime-proof/`
 
@@ -924,11 +931,12 @@ mypi-config/
 **Development Server Structure:**
 - no separate dev server is required for the framework itself
 - Pi is the runtime shell
-- the extension package is developed and tested locally in its own folder
+- pinned Pi package integration is validated from project settings; optional custom extensions are developed and tested locally in their own folders
 
 **Build Process Structure:**
-- Pi loads TypeScript extensions directly
-- extension-local scripts may validate typecheck/tests
+- Pi installs project-local packages declared in `.pi/settings.json`
+- Pi loads TypeScript extensions directly when optional custom extensions exist
+- extension-local scripts may validate typecheck/tests for custom extensions
 - no root-level application build is required for MVP framework runtime
 
 **Deployment Structure:**
@@ -943,8 +951,8 @@ mypi-config/
 **Decision Compatibility:**
 The architecture is coherent overall. The main decisions reinforce each other:
 - artifact-first state
-- deterministic extension-level orchestration
-- generic dispatch tool
+- parent-session BMAD orchestration with optional later deterministic guardrails
+- `pi-subagents` generic dispatch substrate
 - agent roles in Markdown
 - workflow method in BMAD skills
 - framework assets in `.pi/`
@@ -962,9 +970,9 @@ Implementation patterns support the architectural decisions well:
 
 **Structure Alignment:**
 The project structure supports the chosen architecture:
-- `.pi/` holds framework-owned assets
+- `.pi/` holds framework-owned assets and project-local package pins
 - planning artifacts and implementation artifacts are separated
-- extension logic is isolated
+- optional extension logic is isolated when introduced
 - references, agents, and skills have clear homes
 - story execution state has a durable location
 
@@ -996,8 +1004,8 @@ All major FR areas are covered architecturally:
 The architecture addresses the key NFRs:
 - **Security:** role/tool boundaries, escalation on invalid states
 - **Reliability:** deterministic routing and retry rules
-- **Maintainability:** separation between roles, workflows, runtime, and references
-- **Integration:** BMAD compatibility preserved, Pi-native extension model retained
+- **Maintainability:** separation between roles, workflows, runtime packages, optional extensions, and references
+- **Integration:** BMAD compatibility preserved, Pi-native package and extension models retained
 
 ### Implementation Readiness Validation ✅
 
@@ -1043,13 +1051,13 @@ The main agent conflict points are addressed:
    - `environment-blocked`
    - `workflow-contract-violation`
 
-2. **Clarify `orchestrator.md` role**
-   The architecture says orchestration is deterministic in the extension layer.
-   Therefore `orchestrator.md` must not be interpreted as the final runtime decision-maker.
+2. **Clarify parent orchestrator role**
+   The architecture now treats BMAD orchestration as parent-session guidance that delegates through `pi-subagents`.
+   Therefore any `orchestrator.md` child-agent role must not be interpreted as the parent runtime decision-maker or as a nested sub-agent launcher.
    It should be treated as:
-   - a supporting workflow role,
-   - an explainer/summarizer role,
-   - or removed from the runtime control path.
+   - parent-session skill/prompt guidance,
+   - a supporting explainer/summarizer role,
+   - or removed from the child-agent control path.
 
 **Nice-to-Have Gaps:**
 - explicit artifact section examples in `.pi/references/artifact-format.md`
@@ -1060,8 +1068,9 @@ The main agent conflict points are addressed:
 
 The architecture is considered implementation-ready with the following clarifications:
 - validator classification codes should be normalized to kebab-case
-- extension-level runtime remains the authoritative orchestrator
-- any `orchestrator.md` role must be non-authoritative relative to runtime routing
+- `pi-subagents` is the initial authoritative child-agent dispatch substrate
+- parent-session BMAD guidance is the initial orchestrator; later extension guardrails may enforce hard workflow transitions
+- any `orchestrator.md` child-agent role must be non-authoritative relative to parent orchestration
 
 ### Architecture Completeness Checklist
 
@@ -1101,7 +1110,7 @@ The architecture is considered implementation-ready with the following clarifica
 - artifact-first truth model
 - strong auditability and replayability
 - extensible generic dispatch foundation
-- good alignment with Pi’s extension model and BMAD’s artifact model
+- good alignment with Pi’s package/extension model and BMAD’s artifact model
 
 **Areas for Future Enhancement:**
 - richer UI/operator dashboards
@@ -1116,13 +1125,13 @@ The architecture is considered implementation-ready with the following clarifica
 - treat Markdown artifacts as the durable truth
 - do not communicate agent-to-agent directly
 - use canonical naming and classification codes
-- let the extension runtime enforce transitions and escalation
+- use `pi-subagents` `subagent(...)` for child-agent delegation unless a later story explicitly introduces a custom guardrail extension
 
 **First Implementation Priority:**
 1. implement Epic 1: Observable Pi Multi-Agent Runtime
-2. define `.pi/references/artifact-format.md`
-3. define `.pi/references/workflow-status-codes.md`
-4. implement the generic dispatch tool
-5. implement deterministic transition rules in the extension
+2. pin and validate `pi-subagents` in `.pi/settings.json`
+3. define parent-session BMAD orchestration guidance that uses `subagent(...)`
+4. define `.pi/references/artifact-format.md`
+5. define `.pi/references/workflow-status-codes.md`
 6. prove the two-agent runtime smoke scenario before bootstrap packaging or review-dependent workflow proof
 

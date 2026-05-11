@@ -92,7 +92,7 @@ FR14: Harness can verify lint passes cleanly before accepting story completion
 
 FR15: Harness can block story completion if any review pass returns blocking findings
 
-FR16: Builder can wire a multi-agent team via a Pi TypeScript extension (orchestrator + named sub-agents)
+FR16: Builder can wire a multi-agent team via parent-session BMAD orchestration guidance and the `pi-subagents` runtime substrate
 
 FR17: Builder can launch a sub-agent with a fresh context even within an active iteration loop (no inherited conversation history from prior batches)
 
@@ -250,23 +250,23 @@ Total FRs in epics: 41
 | FR6 | Builder can execute the standard BMAD dev-story workflow through the harness | Epic 3 | ✓ Covered |
 | FR7 | Builder can execute the standard BMAD code-review workflow through the harness | Epic 3 | ✓ Covered |
 | FR8 | Builder can run two sequential review passes on a completed story | Epic 3 | ✓ Covered |
-| FR9 | Harness can launch each workflow stage with a fresh, bounded context assembled from story artifacts | Epic 2 | ✓ Covered |
-| FR10 | Harness can route each workflow stage to the model defined in the corresponding agent file | Epic 2 | ✓ Covered |
+| FR9 | Harness can launch each workflow stage with a fresh, bounded context assembled from story artifacts | Epic 1 | ✓ Covered |
+| FR10 | Harness can route each workflow stage to the model defined in the corresponding agent file | Epic 1 | ✓ Covered |
 | FR11 | Harness can enforce an iteration cap per story and stop execution when the cap is reached | Epic 3 | ✓ Covered |
 | FR12 | Harness can escalate to the builder when an iteration cap is hit | Epic 3 | ✓ Covered |
 | FR13 | Harness can verify the targeted test suite passes before accepting story completion | Epic 3 | ✓ Covered |
 | FR14 | Harness can verify lint passes cleanly before accepting story completion | Epic 3 | ✓ Covered |
 | FR15 | Harness can block story completion if any review pass returns blocking findings | Epic 3 | ✓ Covered |
-| FR16 | Builder can wire a multi-agent team via a Pi TypeScript extension | Epic 2 | ✓ Covered |
-| FR17 | Builder can launch a sub-agent with a fresh context even within an active iteration loop | Epic 2 | ✓ Covered |
-| FR18 | Builder can configure Pi UI layout and display per agent team | Epic 2 | ✓ Covered |
-| FR19 | Builder can observe in the Pi UI which sub-agent is currently active and what it is doing | Epic 2 | ✓ Covered |
+| FR16 | Builder can wire a multi-agent team via parent-session BMAD guidance and `pi-subagents` | Epic 1 | ✓ Covered |
+| FR17 | Builder can launch a sub-agent with a fresh context even within an active iteration loop | Epic 1 | ✓ Covered |
+| FR18 | Builder can configure Pi UI layout and display per agent team | Epic 1 | ✓ Covered |
+| FR19 | Builder can observe in the Pi UI which sub-agent is currently active and what it is doing | Epic 1 | ✓ Covered |
 | FR20 | Formal TDD sub-agents consume BMAD markdown artifacts directly as context source | Epic 3 | ✓ Covered |
-| FR21 | Informal/conversational workflows can pass context directly as message content | Epic 2 | ✓ Covered |
-| FR22 | Builder can assign a distinct model to each sub-agent within the same team | Epic 2 | ✓ Covered |
-| FR23 | Orchestrator can route output of one sub-agent as input to another | Epic 2 | ✓ Covered |
-| FR24 | Builder can define descriptive Pi terminal session activity titles | Epic 2 | ✓ Covered |
-| FR25 | Builder can view a Pi UI task/todo list tracking workflow task states | Epic 2 | ✓ Covered |
+| FR21 | Informal/conversational workflows can pass context directly as message content | Epic 1 | ✓ Covered |
+| FR22 | Builder can assign a distinct model to each sub-agent within the same team | Epic 1 | ✓ Covered |
+| FR23 | Parent orchestration can route output of one sub-agent as input to another | Epic 1 | ✓ Covered |
+| FR24 | Builder can define descriptive Pi terminal session activity titles | Epic 1 | ✓ Covered |
+| FR25 | Builder can view a Pi UI task/todo list tracking workflow task states | Epic 1 | ✓ Covered |
 | FR26 | Builder can select a TDD/ATDD/TDAD workflow profile for a story | Epic 4 | ✓ Covered |
 | FR27 | Test-architect can generate a test plan and batch files from a story | Epic 4 | ✓ Covered |
 | FR28 | Test-writer can author tests for a batch before implementation begins | Epic 4 | ✓ Covered |
@@ -306,8 +306,8 @@ UX/UI is implied, but narrowly scoped:
 
 - PRD FR18, FR19, FR24, and FR25 require Pi UI layout, active sub-agent visibility, descriptive terminal session titles, and task/todo list visibility.
 - The PRD also mentions an Advanced Configurator UI as v4 horizon scope.
-- The epics explicitly state no separate UI or web frontend is required; Pi TUI is the operator interface, with additional workflow UI in Pi extension widgets, dashboards, status lines, or overlays.
-- Architecture confirms there is no separate frontend/web UI, Pi TUI is the operator interface, and UI concerns remain in the extension layer without changing the artifact truth model.
+- The epics explicitly state no separate UI or web frontend is required; Pi TUI is the operator interface, with additional workflow UI in Pi package capabilities or optional extension widgets, dashboards, status lines, or overlays.
+- Architecture confirms there is no separate frontend/web UI, Pi TUI is the operator interface, and UI concerns remain outside the durable artifact truth model whether supplied by `pi-subagents` or later optional extensions.
 
 ### Alignment Issues
 

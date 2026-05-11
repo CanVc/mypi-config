@@ -28,7 +28,7 @@ classification:
 
 `mypi-config` is a personal Pi-powered execution harness for a single advanced solo builder who uses BMAD artifacts to structure software delivery. The project fills the gap between planning rigor (BMAD) and delivery rigor: BMAD provides strong story artifacts and process vocabulary; Pi provides deep configurability; `mypi-config` assembles them into a coherent, portable operating model.
 
-The harness is built using Pi's own configuration system — custom agents, hooks, and TypeScript extensions — giving the user a setup that functions like Claude Code but optimized for their specific delivery style rather than a generic audience. BMAD remains the unmodified base: standard story files, standard workflows, standard compatibility. On top of this base, a family of derived workflows adds optional TDD/ATDD/TDAD discipline for stories where test-first quality discipline is warranted. These derived workflows are currently in active design (see `/research/`). The TDD layer is available, not mandatory.
+The harness is built using Pi's own configuration system — custom agents, pinned Pi packages, hooks, and optional TypeScript extensions — giving the user a setup that functions like Claude Code but optimized for their specific delivery style rather than a generic audience. BMAD remains the unmodified base: standard story files, standard workflows, standard compatibility. On top of this base, a family of derived workflows adds optional TDD/ATDD/TDAD discipline for stories where test-first quality discipline is warranted. These derived workflows are currently in active design (see `/research/`). The TDD layer is available, not mandatory.
 
 The primary value is portability and consistency: the harness installs into future projects through a single bootstrap step, eliminating per-project orchestration reconstruction.
 
@@ -37,7 +37,7 @@ The primary value is portability and consistency: the harness installs into futu
 The differentiation is in the execution discipline, not in novel AI primitives. Five properties work together:
 
 - **BMAD-compatible by design.** Derived workflows wrap BMAD, they do not replace it. The standard delivery path is always available; TDD-enriched paths are opt-in based on story profile.
-- **Pi as the framework, not just the runtime.** Pi's agent, hook, and extension system is used to build the harness itself. The result is a fully configurable, introspectable execution layer.
+- **Pi as the framework, not just the runtime.** Pi's agent, package, hook, and optional extension system is used to build the harness itself. The result is a fully configurable, introspectable execution layer.
 - **Multi-model by design.** Each workflow stage can be assigned a different model. Implementation, review, and validation are treated as distinct jobs with different cost/quality profiles. This breaks provider lock-in and enables deliberate model routing — something Claude Code's single-provider model cannot offer.
 - **Opinionated for one user.** The harness is not designed to satisfy all teams or styles. It is tuned for a known working style, which makes it more reliable and less compromised than a general-purpose framework.
 - **Drop-in portable.** The entire harness installs into a new project through a single bootstrap step. No manual reconfiguration, no per-project orchestration rebuild. The operational model travels with the user across projects.
@@ -199,7 +199,7 @@ A Pi/BMAD power user finds the repo. They run the configurator, answer a few que
 
 ### Project-Type Overview
 
-`mypi-config` is a Pi-based execution harness distributed as a project scaffold. It is installed on top of an existing BMAD setup, not as a standalone product. The unit of distribution is a set of Pi configuration files, TypeScript extensions, and derived BMAD workflow files that extend a target project without replacing its base tooling.
+`mypi-config` is a Pi-based execution harness distributed as a project scaffold. It is installed on top of an existing BMAD setup, not as a standalone product. The unit of distribution is a set of Pi configuration files, pinned Pi package declarations, optional TypeScript extensions, and derived BMAD workflow files that extend a target project without replacing its base tooling. Sub-agent launch mechanics should use Pi marketplace packages where they satisfy the runtime contract, beginning with `pi-subagents` for child-agent dispatch.
 
 ### Language / Runtime Support
 
@@ -241,7 +241,7 @@ Single-command bootstrap into a target project. No external publishing or packag
 1. Pi ≥ 0.67.2 installed
 2. Pi `models.json` configured — models used by harness agents must be declared at the Pi level (one-time setup)
 3. BMAD v6 installed in the target project
-4. Bootstrap `mypi-config` — installs Pi agents, hooks, extensions, and derived BMAD workflows
+4. Bootstrap `mypi-config` — installs Pi agents, pinned Pi packages, hooks, optional extensions, and derived BMAD workflows
 
 Constraint: a developer with repo access must be able to complete the full install in under 5 minutes.
 
@@ -332,7 +332,7 @@ Reference workflow examples and artifact specifications in `/research/` remain p
 **Core journeys supported:** J1 (Bootstrap), J2 (Story to Done)
 
 **Must-Have Capabilities:**
-- Pi harness: custom agents, hooks, TypeScript extensions — installable via single bootstrap
+- Pi harness: custom agents, pinned Pi packages, hooks, and optional TypeScript extensions — installable via single bootstrap
 - Pi `models.json` setup with declared models
 - BMAD v6 compatibility — derived workflows layer on top of standard install
 - Standard BMAD workflows (dev-story, code-review) running through the harness
@@ -342,7 +342,7 @@ Reference workflow examples and artifact specifications in `/research/` remain p
 - Iteration cap per story (standard dev-review loop)
 - TDD-derived workflows, test-architect roles, and runtime proof are explicitly out of v1 scope
 
-**v1 sequencing constraint:** The MVP must build the observable multi-agent runtime first. Review-dependent story-to-done validation and portable bootstrap proof come after sub-agent dispatch, fresh-context execution, model routing, and task-state visibility exist.
+**v1 sequencing constraint:** The MVP must establish the observable multi-agent runtime first. Review-dependent story-to-done validation and portable bootstrap proof come after `pi-subagents` dispatch integration, fresh-context execution, model routing, and task-state visibility exist.
 
 ### Post-MVP Features
 
@@ -407,13 +407,13 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 
 ### Orchestration & Interface Layer *(v1)*
 
-- FR16: Builder can run a named multi-agent workflow with defined stage order, assigned roles, and explicit handoff boundaries
+- FR16: Builder can run a named multi-agent workflow with defined stage order, assigned roles, and explicit handoff boundaries, using `pi-subagents` as the default sub-agent dispatch substrate
 - FR17: Builder can start a sub-agent run without inheriting prior batch conversation history
 - FR18: Builder can configure which workflow roles are visible during execution and how their status is grouped in the interface
 - FR19: Builder can see which workflow role is active and the current stage it is executing
 - FR20: In formal TDD workflows, orchestrated roles can use story artifacts as their primary context source
 - FR22: Builder can assign a distinct model to each sub-agent within the same team
-- FR23: Orchestrator can route the output of one sub-agent as the input to another in a defined sequence
+- FR23: Parent BMAD orchestration guidance can route the output of one sub-agent as the input to another in a defined sequence
 - FR24: Builder can label a running workflow session so concurrent executions are distinguishable
 - FR25: Builder can view workflow task state as pending, in-progress, and completed
 
@@ -467,6 +467,6 @@ Solo execution means scope must stay lean. v1 is intentionally narrow: standard 
 ### Maintainability
 
 - Agent definition files are readable and editable without knowledge of Pi internals — a builder can change a model assignment in under 2 minutes
-- Every Pi TypeScript extension follows the standard extension template and passes lint/typecheck at 100%; non-conforming extensions fail CI validation
+- Every framework-owned Pi TypeScript extension, when introduced for custom guardrails, follows the standard extension template and passes lint/typecheck at 100%; non-conforming extensions fail CI validation
 - A builder familiar with BMAD identifies trigger, phases, and output artifacts in a derived workflow in ≤10 minutes; success rate is ≥80% across 3 internal reviewers
 

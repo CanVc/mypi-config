@@ -1,176 +1,178 @@
-# Story 1.1: Implement the Generic Sub-Agent Dispatch Tool
+# Story 1.1: Integrate Pi Subagents for BMAD Agent Dispatch
 
 Status: ready-for-dev
 
-<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+<!-- Note: This story was pivoted on 2026-05-11: use the marketplace `pi-subagents` runtime instead of building a custom dispatch extension first. -->
 
 ## Story
 
 As a builder,
-I want the Pi extension to dispatch named sub-agents through one generic tool,
-so that workflows can route work to different agents without hardcoding role-specific launch logic.
+I want the BMAD parent orchestrator to delegate work through Pi's marketplace `pi-subagents` runtime,
+so that BMAD workflows can launch focused sub-agents without maintaining custom role-specific or duplicate dispatch logic.
 
 ## Acceptance Criteria
 
-1. Given the `bmad-orchestrator` extension scaffold is available or created by this story, when a dispatch request is submitted with an agent identifier, session mode, task, and context input, then the extension validates the request shape and rejects missing or unknown required fields.
-2. Given a valid dispatch request names a known agent, when dispatch executes, then the extension launches the requested agent through Pi and the runtime output records the canonical agent identifier.
-3. Given a dispatch request names an unknown agent, when dispatch validation runs, then dispatch is refused and the error names the unknown agent and the allowed agent identifiers.
-4. Given a workflow needs to pass informal context, when the dispatch request includes direct message content, then the sub-agent receives that content as its task context and no canonical artifact path is required for informal workflows.
-5. Given dispatch completes, when the orchestrator receives the completion signal, then the signal is treated as control-plane output only and durable workflow truth remains in artifacts when artifacts are part of the workflow.
+1. Given the project does not yet declare a sub-agent runtime, when this story is implemented, then `pi-subagents` is added as a project-local Pi package with a pinned version and Pi can discover its `subagent` tool.
+2. Given BMAD orchestration runs in the parent Pi session, when orchestration guidance is loaded, then it instructs the parent to use `subagent(...)` for delegation and does not introduce a custom `dispatch_subagent` tool or `.pi/extensions/bmad-orchestrator/` runtime.
+3. Given the parent needs to delegate work, when it requests a known agent through `subagent`, then the launched child run records the canonical agent identifier returned by `pi-subagents`.
+4. Given the parent requests an unknown agent, when `pi-subagents` validates the request, then the request is refused with an actionable unknown-agent message and available agent identifiers.
+5. Given an informal or conversational BMAD workflow has no canonical artifact yet, when the parent delegates by passing direct task/message content, then the sub-agent receives that content as its task context and no artifact path is required.
+6. Given a formal artifact-based BMAD workflow delegates work, when artifact context is needed, then the parent passes artifact paths to the child as paths/read directives rather than reconstructing lossy summaries in the parent.
+7. Given a child run completes, when the parent receives the sub-agent result, then that result is treated as control-plane output only; durable workflow truth remains in Markdown artifacts when artifacts are part of the workflow.
+8. Given `pi-subagents` prevents child sessions from becoming parent orchestrators by default, when defining BMAD orchestration guidance, then `bmad-orchestrator` is modeled as parent-session guidance, not as a child agent expected to call more sub-agents.
 
 ## Tasks / Subtasks
 
-- [ ] Create the project-local extension skeleton if it does not already exist. (AC: 1)
-  - [ ] Create `.pi/extensions/bmad-orchestrator/package.json` with extension-local scripts and dependencies only.
-  - [ ] Create `.pi/extensions/bmad-orchestrator/tsconfig.json`.
-  - [ ] Create `.pi/extensions/bmad-orchestrator/src/index.ts` as the Pi extension entry point.
-  - [ ] Create `.pi/extensions/bmad-orchestrator/src/types.ts` for dispatch request/result types.
-  - [ ] Create `.pi/extensions/bmad-orchestrator/src/dispatch-subagent.ts` for dispatch validation and process execution.
-  - [ ] Create `.pi/extensions/bmad-orchestrator/tests/dispatch-subagent.test.ts` or equivalent test coverage.
-- [ ] Register one generic Pi tool for sub-agent dispatch. (AC: 1, 4)
-  - [ ] Tool name should be stable and workflow-agnostic, e.g. `dispatch_subagent`.
-  - [ ] Tool parameters must include `agent`, `sessionMode`, `task`, and optional context inputs.
-  - [ ] Support direct message content for informal workflows.
-  - [ ] Support artifact path inputs without reading or summarizing artifact content in this story.
-- [ ] Implement deterministic request validation. (AC: 1, 3)
-  - [ ] Reject missing `agent`, `sessionMode`, or `task`.
-  - [ ] Reject non-canonical agent identifiers; use lowercase kebab-case only.
-  - [ ] Reject unknown agents by checking an allowed-agent registry or `.pi/agents/<agent>.md` presence.
-  - [ ] Return errors that name the offending agent and allowed agent identifiers.
-- [ ] Implement the first dispatch execution path. (AC: 2, 4)
-  - [ ] Launch Pi as a subprocess or equivalent local runtime boundary for the named agent.
-  - [ ] Ensure dispatch code records the canonical agent identifier in the result.
-  - [ ] Pass direct message content as task context when provided.
-  - [ ] Pass artifact paths as paths, not lossy summaries.
-- [ ] Preserve control-plane vs artifact-truth boundaries. (AC: 5)
-  - [ ] Dispatch result may report exit/completion status and captured output metadata.
-  - [ ] Do not treat subprocess success as durable workflow completion when artifact workflows are in use.
-  - [ ] Do not create sidecar durable state files as the source of truth.
-- [ ] Add focused tests for dispatch validation and result shape. (AC: 1-5)
-  - [ ] Valid request with known agent succeeds in dry-run/mock mode.
-  - [ ] Missing required fields fail with actionable messages.
-  - [ ] Unknown agent fails with allowed-agent list.
-  - [ ] Informal message context is accepted without artifact paths.
-  - [ ] Result includes canonical agent identifier and treats completion as control-plane output.
+- [ ] Add `pi-subagents` as the project-local dispatch runtime. (AC: 1)
+  - [ ] Update or create `.pi/settings.json` so `packages` includes a pinned `npm:pi-subagents@0.24.2` entry or the currently approved pinned version.
+  - [ ] Do not install it only in global user settings; the dependency must travel with this project.
+  - [ ] Verify Pi starts with the package and exposes the `subagent` tool / packaged commands.
+- [ ] Replace the custom-dispatch implementation plan with parent-orchestrator guidance. (AC: 2, 8)
+  - [ ] Do not create `.pi/extensions/bmad-orchestrator/package.json`, `src/index.ts`, or `dispatch-subagent.ts` in this story.
+  - [ ] Create parent-session BMAD orchestration guidance as a Pi skill or prompt template, preferably `.pi/skills/bmad-orchestrator/SKILL.md` unless implementation discovers a better Pi-native parent-prompt location.
+  - [ ] Guidance must say the parent uses `subagent(...)` directly for delegation.
+  - [ ] Guidance must state that child agents must not communicate horizontally or attempt nested orchestration.
+- [ ] Define the initial delegation contract on top of `pi-subagents`. (AC: 3-7)
+  - [ ] Map BMAD `sessionMode: fresh` to `subagent` `context: "fresh"`.
+  - [ ] Treat previous `sessionMode: resume` as out of scope for this story unless `pi-subagents` resume/status behavior is being used explicitly for an async run.
+  - [ ] Use `agentScope: "both"` or `"project"` only when project-local agents are intentionally trusted.
+  - [ ] Pass informal context as `task` text.
+  - [ ] Pass formal artifact paths through task text and/or `reads` semantics supported by `pi-subagents`; do not summarize artifacts in this story.
+- [ ] Provide a minimal known-agent path for smoke validation. (AC: 3, 4)
+  - [ ] Prefer using packaged builtin agents (`scout`, `planner`, `worker`, `reviewer`, `oracle`, etc.) for the initial smoke if no BMAD project agents exist yet.
+  - [ ] If a project fixture is needed, create only the smallest canonical kebab-case project agent under `.pi/agents/` required for smoke validation.
+  - [ ] Do not implement the full BMAD agent roster here; detailed agent definitions and model routing belong to Story 1.2.
+- [ ] Validate dispatch behavior with focused smoke checks. (AC: 1-7)
+  - [ ] Verify available agents can be listed through `pi-subagents` discovery.
+  - [ ] Verify a known-agent call succeeds using direct task content.
+  - [ ] Verify an unknown-agent call fails with available identifiers.
+  - [ ] Verify an artifact-path task can be passed without parent-side summarization.
+  - [ ] Capture smoke evidence in the Dev Agent Record or a small implementation note.
+- [ ] Preserve architecture boundaries. (AC: 7, 8)
+  - [ ] Runtime package output is not durable workflow state.
+  - [ ] Markdown artifacts remain source of truth for formal BMAD workflows.
+  - [ ] No sidecar database or custom state file is introduced.
 
 ## Dev Notes
 
 ### Scope Boundary
 
-This story is the first runtime story. It should create only the foundation needed for generic dispatch. Do **not** implement full workflow orchestration, model routing, fresh-context policy, task-list state, UI widgets, or standard BMAD story execution here; those belong to later Epic 1 and Epic 3 stories.
+This story establishes the sub-agent dispatch substrate for BMAD workflows by adopting `pi-subagents`. It should not build the previous custom `.pi/extensions/bmad-orchestrator/` TypeScript runtime.
 
-Expected output is a small, testable dispatch foundation inside `.pi/extensions/bmad-orchestrator/`.
+The parent BMAD orchestrator is a guidance layer in the active parent Pi session. It may be represented as a skill or prompt template. It is not a child sub-agent that recursively launches other sub-agents, because `pi-subagents` intentionally constrains child sessions from acting as parent orchestrators.
+
+Do **not** implement full workflow orchestration, transition rules, model routing, task-list state, UI widgets, standard BMAD story execution, or TDD/ATDD/TDAD workflow logic here. Those remain later stories.
 
 ### Current Repository State
 
 - The repository currently has BMAD/Pi skills under `.pi/skills/`.
-- The runtime scaffold directories `.pi/extensions/`, `.pi/agents/`, and `.pi/references/` may be absent or incomplete. This story may create the extension folder required for dispatch.
-- Do not modify installed BMAD base skills unless directly required for this story.
-- A previous old Story 1.1 file referenced bootstrap-first sequencing; it is obsolete after the runtime-first correction.
+- `.pi/settings.json`, `.pi/agents/`, `.pi/prompts/`, and `.pi/references/` may be absent.
+- The old Story 1.1 expected a custom `.pi/extensions/bmad-orchestrator/` package. That plan is superseded by this marketplace-runtime integration.
+- Story 1.2 remains responsible for fuller BMAD agent definitions and model routing contracts.
 
 ### Technical Requirements
 
-- Use TypeScript for the Pi extension and Markdown only for agent/workflow artifacts.
-- The extension must be project-local under `.pi/extensions/bmad-orchestrator/`.
-- Pi discovers project-local extensions from `.pi/extensions/*/index.ts`; package-style extensions may declare a `pi.extensions` entry in `package.json` pointing to `./src/index.ts`.
-- Extension dependencies must stay inside `.pi/extensions/bmad-orchestrator/` and must not require root-level `node_modules`.
-- Use `@earendil-works/pi-coding-agent` types and `typebox` schemas for `pi.registerTool()` parameters.
-- Use Node.js built-ins such as `node:child_process`, `node:fs`, and `node:path` as needed.
-- Prefer dependency-free implementation for this story unless a dependency is clearly necessary.
+- Use `pi-subagents` from Pi packages as the dispatch runtime.
+- Pin the package version in project settings to keep the story reproducible.
+- Use project-local settings (`.pi/settings.json`) rather than global-only settings.
+- Do not add root-level `node_modules`.
+- Do not add a custom `dispatch_subagent` tool in this story.
+- BMAD parent guidance should use the packaged `subagent` tool contract.
+- Canonical names for project-owned agents and artifacts must remain lowercase kebab-case.
 
-### Proposed Dispatch Contract
+### Adopted Dispatch Shape
 
-Use this shape unless implementation discovers a Pi-native better equivalent:
+The story adopts the `pi-subagents` tool rather than the old custom contract.
+
+Typical single-agent dispatch:
 
 ```ts
-type DispatchRequest = {
-  agent: string; // canonical lowercase kebab-case, e.g. "implementer"
-  sessionMode: "fresh" | "resume";
-  task: string;
-  context?: {
-    message?: string;
-    artifacts?: string[];
-  };
-};
-
-type DispatchResult = {
-  agent: string;
-  sessionMode: "fresh" | "resume";
-  status: "completed" | "failed";
-  controlPlaneOnly: true;
-  exitCode?: number;
-  output?: string;
-  error?: string;
-};
+subagent({
+  agent: "worker",
+  task: "Implement the approved plan in docs/_bmad-output/...",
+  context: "fresh",
+  agentScope: "both"
+})
 ```
 
-Validation in this story should accept the contract and enforce shape/agent identity. Later stories may tighten `sessionMode` semantics and model routing.
+Informal context:
+
+```ts
+subagent({
+  agent: "oracle",
+  task: "Challenge this plan: <direct message content>",
+  context: "fresh"
+})
+```
+
+Artifact-based context:
+
+```ts
+subagent({
+  agent: "reviewer",
+  task: "Review the story using artifact paths as source of truth: docs/_bmad-output/implementation-artifacts/1-1-implement-the-generic-sub-agent-dispatch-tool.md",
+  context: "fresh",
+  agentScope: "both"
+})
+```
+
+If implementation uses `reads` or another `pi-subagents` file-read mechanism, pass artifact paths as paths and keep the parent from rewriting artifact contents into summaries.
 
 ### Architecture Compliance
 
-- Markdown artifacts are the durable source of truth. Runtime completion signals are control-plane only.
-- Agent communication must remain vertical through the orchestrator/runtime; agents must not communicate directly with one another.
-- The extension layer is the deterministic orchestration surface; do not make an LLM `orchestrator.md` role authoritative.
-- Ambiguous or unsafe states should fail closed with actionable errors rather than being interpreted freely.
-- Canonical names use lowercase kebab-case for agents, artifacts, and reference files.
+- `pi-subagents` is the runtime substrate for launching child Pi sessions.
+- BMAD parent-session guidance decides when and why to delegate.
+- Later deterministic workflow rules may still require a BMAD-specific extension, but that is not Story 1.1.
+- Markdown artifacts are the durable source of truth.
+- Agent communication remains vertical through the parent/orchestrator.
+- Child results are control-plane output and do not override artifact state.
+- Ambiguous or unsafe formal workflow states should be escalated by later orchestration stories rather than interpreted freely here.
 
-### File Structure Requirements
+### File Structure Expectations
 
-Create or update only files needed for the dispatch foundation:
+Expected additions are limited to configuration and parent guidance, for example:
 
 ```text
 .pi/
-  extensions/
+  settings.json
+  skills/
     bmad-orchestrator/
-      package.json
-      tsconfig.json
-      src/
-        index.ts
-        dispatch-subagent.ts
-        types.ts
-      tests/
-        dispatch-subagent.test.ts
+      SKILL.md
+  agents/                 # optional in this story; minimal fixture only if needed
+    <minimal-smoke-agent>.md
 ```
 
-Do not create the complete future scaffold unless necessary. In particular:
+Do not create the obsolete custom extension scaffold:
 
-- `.pi/agents/` may be created only if needed for known-agent fixture/lookup behavior.
-- `.pi/references/` files are important architecture artifacts but should be created only if needed by this story's tests or dispatch contract; otherwise they can be handled by the next appropriate story.
-- Bootstrap scripts belong to Epic 2, not this story.
+```text
+.pi/extensions/bmad-orchestrator/   # not for this story
+```
 
-### Testing Requirements
+### Testing / Smoke Requirements
 
-- Add extension-local tests for validation and dispatch result behavior.
-- Tests may mock subprocess execution; do not require real model-provider calls.
-- Tests must be runnable from `.pi/extensions/bmad-orchestrator/` without root-level dependencies.
-- If a test framework is introduced, keep it in the extension package and wire it through `package.json` scripts.
-- Do not require provider API keys or committed secrets.
+Tests for this story are integration smoke checks rather than extension unit tests, because dispatch is provided by `pi-subagents`.
 
-### Implementation Guidance
+Smoke checks should prove:
 
-- Build the smallest reliable vertical slice: tool registration + validation + mockable dispatch function.
-- Keep `dispatch-subagent.ts` workflow-agnostic. It should not know about `dev-story`, `code-review`, TDD batches, or specific BMAD flows.
-- Separate pure validation from process execution so tests can cover validation deterministically.
-- Error messages should be actionable and include the rejected field/path/agent.
-- If using subprocess execution, ensure command arguments are passed safely as an array, not shell-concatenated strings.
+- `pi-subagents` package is configured project-locally.
+- Agents can be discovered/listed.
+- Known-agent dispatch works with direct task content.
+- Unknown-agent dispatch fails closed with useful allowed-agent information.
+- Artifact-path context can be passed without parent-side summarization.
+- Completion is recorded as control-plane evidence only.
 
-### Project Structure Notes
-
-- The full architecture target includes `.pi/settings.json`, `.pi/references/`, `.pi/agents/`, `.pi/skills/`, `.pi/extensions/bmad-orchestrator/`, and helper scripts, but this story should focus on the dispatch extension foundation only.
-- Durable workflow artifacts later live under `docs/_bmad-output/implementation-artifacts/stories/<story-id>/`; this story itself is stored at `docs/_bmad-output/implementation-artifacts/1-1-implement-the-generic-sub-agent-dispatch-tool.md` because that is the current sprint tracking convention.
-- No separate UI, web frontend, Docker service, database, or hosted infrastructure is required.
+No provider secrets should be committed. If a real model call is not available in the dev environment, capture the exact blocked smoke step and the static validation that was completed.
 
 ### References
 
-- [Source: docs/_bmad-output/planning-artifacts/epics.md#Epic-1-Observable-Pi-Multi-Agent-Runtime]
+- [Source: https://pi.dev/packages]
+- [Source: https://pi.dev/packages/pi-subagents]
+- [Source: npm package `pi-subagents@0.24.2` README]
+- [Source: /home/cvc/.local/share/fnm/node-versions/v24.15.0/installation/lib/node_modules/@earendil-works/pi-coding-agent/docs/packages.md#Pi-Packages]
+- [Source: /home/cvc/.local/share/fnm/node-versions/v24.15.0/installation/lib/node_modules/@earendil-works/pi-coding-agent/docs/extensions.md#Extensions]
 - [Source: docs/_bmad-output/planning-artifacts/epics.md#Story-1-1-Implement-the-Generic-Sub-Agent-Dispatch-Tool]
 - [Source: docs/_bmad-output/planning-artifacts/architecture.md#Core-Architectural-Decisions]
 - [Source: docs/_bmad-output/planning-artifacts/architecture.md#Implementation-Patterns--Consistency-Rules]
-- [Source: docs/_bmad-output/planning-artifacts/architecture.md#Project-Structure--Boundaries]
-- [Source: docs/_bmad-output/planning-artifacts/prd.md#MVP-Feature-Set--v1]
-- [Source: /home/cvc/.local/share/fnm/node-versions/v24.15.0/installation/lib/node_modules/@earendil-works/pi-coding-agent/docs/extensions.md#Extensions]
-- [Source: /home/cvc/.local/share/fnm/node-versions/v24.15.0/installation/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/with-deps/index.ts]
-- [Source: /home/cvc/.local/share/fnm/node-versions/v24.15.0/installation/lib/node_modules/@earendil-works/pi-coding-agent/examples/extensions/reload-runtime.ts]
 
 ## Dev Agent Record
 
@@ -186,4 +188,4 @@ TBD by dev agent.
 
 ## Create-Story Completion Status
 
-Ultimate context engine analysis completed - comprehensive developer guide created.
+Story pivoted from custom dispatch-extension implementation to project-local `pi-subagents` runtime integration with BMAD parent-session orchestration guidance.
