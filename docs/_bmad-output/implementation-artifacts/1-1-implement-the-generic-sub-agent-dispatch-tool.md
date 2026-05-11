@@ -1,6 +1,6 @@
 # Story 1.1: Integrate Pi Subagents for BMAD Agent Dispatch
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: This story was pivoted on 2026-05-11: use the marketplace `pi-subagents` runtime instead of building a custom dispatch extension first. -->
 
@@ -23,35 +23,46 @@ so that BMAD workflows can launch focused sub-agents without maintaining custom 
 
 ## Tasks / Subtasks
 
-- [ ] Add `pi-subagents` as the project-local dispatch runtime. (AC: 1)
-  - [ ] Update or create `.pi/settings.json` so `packages` includes a pinned `npm:pi-subagents@0.24.2` entry or the currently approved pinned version.
-  - [ ] Do not install it only in global user settings; the dependency must travel with this project.
-  - [ ] Verify Pi starts with the package and exposes the `subagent` tool / packaged commands.
-- [ ] Replace the custom-dispatch implementation plan with parent-orchestrator guidance. (AC: 2, 8)
-  - [ ] Do not create `.pi/extensions/bmad-orchestrator/package.json`, `src/index.ts`, or `dispatch-subagent.ts` in this story.
-  - [ ] Create parent-session BMAD orchestration guidance as a Pi skill or prompt template, preferably `.pi/skills/bmad-orchestrator/SKILL.md` unless implementation discovers a better Pi-native parent-prompt location.
-  - [ ] Guidance must say the parent uses `subagent(...)` directly for delegation.
-  - [ ] Guidance must state that child agents must not communicate horizontally or attempt nested orchestration.
-- [ ] Define the initial delegation contract on top of `pi-subagents`. (AC: 3-7)
-  - [ ] Map BMAD `sessionMode: fresh` to `subagent` `context: "fresh"`.
-  - [ ] Treat previous `sessionMode: resume` as out of scope for this story unless `pi-subagents` resume/status behavior is being used explicitly for an async run.
-  - [ ] Use `agentScope: "both"` or `"project"` only when project-local agents are intentionally trusted.
-  - [ ] Pass informal context as `task` text.
-  - [ ] Pass formal artifact paths through task text and/or `reads` semantics supported by `pi-subagents`; do not summarize artifacts in this story.
-- [ ] Provide a minimal known-agent path for smoke validation. (AC: 3, 4)
-  - [ ] Prefer using packaged builtin agents (`scout`, `planner`, `worker`, `reviewer`, `oracle`, etc.) for the initial smoke if no BMAD project agents exist yet.
-  - [ ] If a project fixture is needed, create only the smallest canonical kebab-case project agent under `.pi/agents/` required for smoke validation.
-  - [ ] Do not implement the full BMAD agent roster here; detailed agent definitions and model routing belong to Story 1.2.
-- [ ] Validate dispatch behavior with focused smoke checks. (AC: 1-7)
-  - [ ] Verify available agents can be listed through `pi-subagents` discovery.
-  - [ ] Verify a known-agent call succeeds using direct task content.
-  - [ ] Verify an unknown-agent call fails with available identifiers.
-  - [ ] Verify an artifact-path task can be passed without parent-side summarization.
-  - [ ] Capture smoke evidence in the Dev Agent Record or a small implementation note.
-- [ ] Preserve architecture boundaries. (AC: 7, 8)
-  - [ ] Runtime package output is not durable workflow state.
-  - [ ] Markdown artifacts remain source of truth for formal BMAD workflows.
-  - [ ] No sidecar database or custom state file is introduced.
+- [x] Add `pi-subagents` as the project-local dispatch runtime. (AC: 1)
+  - [x] Update or create `.pi/settings.json` so `packages` includes a pinned `npm:pi-subagents@0.24.2` entry or the currently approved pinned version.
+  - [x] Do not install it only in global user settings; the dependency must travel with this project.
+  - [x] Verify Pi starts with the package and exposes the `subagent` tool / packaged commands.
+- [x] Replace the custom-dispatch implementation plan with parent-orchestrator guidance. (AC: 2, 8)
+  - [x] Do not create `.pi/extensions/bmad-orchestrator/package.json`, `src/index.ts`, or `dispatch-subagent.ts` in this story.
+  - [x] Create parent-session BMAD orchestration guidance as a Pi skill or prompt template, preferably `.pi/skills/bmad-orchestrator/SKILL.md` unless implementation discovers a better Pi-native parent-prompt location.
+  - [x] Guidance must say the parent uses `subagent(...)` directly for delegation.
+  - [x] Guidance must state that child agents must not communicate horizontally or attempt nested orchestration.
+- [x] Define the initial delegation contract on top of `pi-subagents`. (AC: 3-7)
+  - [x] Map BMAD `sessionMode: fresh` to `subagent` `context: "fresh"`.
+  - [x] Treat previous `sessionMode: resume` as out of scope for this story unless `pi-subagents` resume/status behavior is being used explicitly for an async run.
+  - [x] Use `agentScope: "both"` or `"project"` only when project-local agents are intentionally trusted.
+  - [x] Pass informal context as `task` text.
+  - [x] Pass formal artifact paths through task text and/or `reads` semantics supported by `pi-subagents`; do not summarize artifacts in this story.
+- [x] Provide a minimal known-agent path for smoke validation. (AC: 3, 4)
+  - [x] Prefer using packaged builtin agents (`scout`, `planner`, `worker`, `reviewer`, `oracle`, etc.) for the initial smoke if no BMAD project agents exist yet.
+  - [x] If a project fixture is needed, create only the smallest canonical kebab-case project agent under `.pi/agents/` required for smoke validation.
+  - [x] Do not implement the full BMAD agent roster here; detailed agent definitions and model routing belong to Story 1.2.
+- [x] Validate dispatch behavior with focused smoke checks. (AC: 1-7)
+  - [x] Verify available agents can be listed through `pi-subagents` discovery.
+  - [x] Verify a known-agent call succeeds using direct task content.
+  - [x] Verify an unknown-agent call fails with available identifiers.
+  - [x] Verify an artifact-path task can be passed without parent-side summarization.
+  - [x] Capture smoke evidence in the Dev Agent Record or a small implementation note.
+- [x] Preserve architecture boundaries. (AC: 7, 8)
+  - [x] Runtime package output is not durable workflow state.
+  - [x] Markdown artifacts remain source of truth for formal BMAD workflows.
+  - [x] No sidecar database or custom state file is introduced.
+
+### Review Findings
+
+- [x] [Review][Defer] Artifact/status reference contract placement belongs to later scaffold/workflow stories — deferred, not required for Story 1.1. Placement agreed: placeholders in Story 2.1, minimal standard-workflow semantics in Story 3.1/3.3 if needed, and full TDD artifact/status semantics in Story 4.2/4.7.
+- [ ] [Review][Patch] Unknown-agent available-identifiers contract needs explicit parent-follow-up evidence — AC4 is accepted as satisfied via parent-mediated recovery: the runtime fails closed on the unknown agent, then the parent immediately lists available identifiers and surfaces them. Patch the story/guidance evidence so this interpretation is explicit and reproducible.
+- [ ] [Review][Patch] `.pi/npm/.gitignore` is omitted from the Dev Agent Record File List [.pi/npm/.gitignore:1]
+- [ ] [Review][Patch] Canonical agent identifier recording is stated but not implemented or verified [.pi/skills/bmad-orchestrator/SKILL.md:16]
+- [ ] [Review][Patch] Artifact-path delegation does not require existence/readability validation before dispatch [.pi/skills/bmad-orchestrator/SKILL.md:45]
+- [ ] [Review][Patch] Child run timeout/error handling does not explicitly fail closed before workflow state updates [.pi/skills/bmad-orchestrator/SKILL.md:70]
+- [ ] [Review][Patch] Parent guidance lacks an explicit active-tool allowlist [.pi/skills/bmad-orchestrator/SKILL.md:1]
+- [ ] [Review][Patch] Framework guidance hardcodes this repo's Story 1.1 artifact path instead of using a portable placeholder [.pi/skills/bmad-orchestrator/SKILL.md:57]
 
 ## Dev Notes
 
@@ -178,13 +189,47 @@ No provider secrets should be committed. If a real model call is not available i
 
 ### Agent Model Used
 
-TBD by dev agent.
+Pi coding agent session (model identifier not exposed by harness).
+
+### Implementation Plan
+
+1. Configure the project-local Pi package list with pinned `npm:pi-subagents@0.24.2`.
+2. Add parent-session BMAD orchestration guidance as a Pi skill, not a child agent or custom extension.
+3. Encode the initial delegation contract in the guidance: fresh context mapping, agent scope rules, direct task text, artifact path passing, control-plane result handling, and child orchestration boundaries.
+4. Validate package discovery and smoke constraints with static checks plus Pi startup/tool allowlist verification where a live provider call is not available.
 
 ### Debug Log References
 
+- RED check: `.pi/settings.json` was absent and the pinned package assertion failed before implementation.
+- GREEN check: `jq -e '.packages[]? == "npm:pi-subagents@0.24.2"' .pi/settings.json` passed; `pi list` reported `Project packages: npm:pi-subagents@0.24.2`.
+- Pi startup/tool discovery check: `PI_TELEMETRY=0 pi --offline --no-builtin-tools --tools subagent --no-session --provider openai --api-key dummy --model gpt-4o-mini -p "Say OK without using tools."` reached the provider request and failed only on the intentional dummy API key, confirming startup accepted the `subagent` tool allowlist.
+- Parent guidance validation: Python static assertions verified `subagent(...)`, no custom `dispatch_subagent`, no `.pi/extensions/bmad-orchestrator/`, child no-horizontal/no-nested-orchestration boundaries, fresh context mapping, scope rules, artifact path handling, control-plane result handling, and Markdown source-of-truth guidance.
+- Package smoke validation: `npm pack pi-subagents@0.24.2` inspection verified packaged builtin agents (`scout`, `planner`, `worker`, `reviewer`, `oracle`, `delegate`), `SubagentParams` schema support for `task`, `context`, `agentScope`, and `reads`, list-action output that enumerates executable agents, and fail-closed unknown-agent validation.
+- Live sub-agent smoke: `PI_TELEMETRY=0 pi --offline --no-session -p '/run scout "Return exactly: SUBAGENT_SMOKE_OK"'` returned `SUBAGENT_SMOKE_OK`.
+- Live discovery smoke: `PI_TELEMETRY=0 pi --offline --no-session -p 'Show me available subagents. Only list names.'` returned `context-builder`, `delegate`, `oracle`, `planner`, `researcher`, `reviewer`, `scout`, and `worker`.
+- Live unknown-agent smoke: `PI_TELEMETRY=0 pi --offline --no-session -p '/run definitely-unknown-agent "Return OK"'` failed closed with `Unknown agent: definitely-unknown-agent`. Because the runtime response did not include available identifiers inline, parent guidance was tightened to require an immediate list/discovery follow-up and surface available identifiers to the user.
+- Live artifact-path smoke: `PI_TELEMETRY=0 pi --offline --no-session -p '/run reviewer "Read this artifact path as source of truth, do not summarize from parent context: docs/_bmad-output/implementation-artifacts/1-1-implement-the-generic-sub-agent-dispatch-tool.md. Return exactly ARTIFACT_PATH_RECEIVED if you can see the path instruction."'` returned `ARTIFACT_PATH_RECEIVED`.
+- Regression/static validation: repository has no root `package.json`, `pyproject.toml`, `Cargo.toml`, `Makefile`, or test suite; final static smoke validation and `pi list` passed.
+
 ### Completion Notes List
 
+- Added project-local `.pi/settings.json` with pinned `npm:pi-subagents@0.24.2`; no root-level `node_modules` was created.
+- Added `.pi/skills/bmad-orchestrator/SKILL.md` as parent-session orchestration guidance that delegates through `subagent(...)` directly and explicitly avoids the obsolete custom dispatch extension/runtime.
+- Documented the BMAD-on-`pi-subagents` delegation contract: `sessionMode: fresh` to `context: "fresh"`, resume out of scope except explicit async status/resume use, `agentScope` trust rules, direct informal task content, artifact-path source-of-truth passing, fail-closed unknown-agent handling with discovery follow-up, and control-plane-only child results.
+- Used packaged builtin agents as the minimal known-agent path for smoke validation; no project fixture agent or full BMAD roster was added.
+- Preserved architecture boundaries: parent owns orchestration, child agents must not communicate horizontally or perform nested orchestration, and durable workflow truth remains in Markdown artifacts.
+
 ### File List
+
+- `.pi/settings.json`
+- `.pi/skills/bmad-orchestrator/SKILL.md`
+- `docs/_bmad-output/implementation-artifacts/1-1-implement-the-generic-sub-agent-dispatch-tool.md`
+- `docs/_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+### Change Log
+
+- 2026-05-11: Integrated project-local `pi-subagents` runtime configuration and parent-session BMAD orchestration guidance.
+- 2026-05-11: Added live sub-agent smoke evidence and tightened unknown-agent discovery follow-up guidance.
 
 ## Create-Story Completion Status
 
