@@ -1,0 +1,93 @@
+# generated: 2026-05-11
+# last_updated: 2026-05-11
+# project: mypi-config
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: docs/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-11
+last_updated: 2026-05-11
+project: mypi-config
+project_key: NOKEY
+tracking_system: file-system
+story_location: docs/_bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: in-progress
+  1-1-set-up-initial-project-from-the-project-local-pi-scaffold-starter: ready-for-dev
+  1-2-add-bootstrap-installation-script-with-safe-overwrite-rules: backlog
+  1-3-add-workstation-and-dependency-verification: backlog
+  1-4-document-and-validate-model-configuration: backlog
+  1-5-add-extension-validation-and-ci-gate: backlog
+  1-6-run-first-post-bootstrap-smoke-workflow: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  2-1-implement-the-generic-sub-agent-dispatch-tool: backlog
+  2-2-add-agent-definitions-and-model-routing-contract: backlog
+  2-3-enforce-fresh-context-session-policy: backlog
+  2-4-add-orchestrator-task-routing-and-task-list-state: backlog
+  2-5-add-pi-ui-visibility-for-agent-activity: backlog
+  2-6-prove-multi-agent-runtime-with-a-two-agent-smoke-scenario: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  3-1-accept-a-canonical-bmad-story-file-as-workflow-input: backlog
+  3-2-execute-standard-bmad-dev-story-through-the-runtime: backlog
+  3-3-enforce-story-iteration-caps-and-builder-escalation: backlog
+  3-4-add-test-and-lint-quality-gates: backlog
+  3-5-execute-two-pass-bmad-code-review-gate: backlog
+  3-6-prove-end-to-end-standard-story-to-done-execution: backlog
+  epic-3-retrospective: optional
+  epic-4: backlog
+  4-1-select-a-formal-tdd-atdd-tdad-workflow-profile: backlog
+  4-2-generate-test-plan-and-batch-artifacts-from-a-story: backlog
+  4-3-author-batch-tests-before-implementation: backlog
+  4-4-validate-red-tests-fail-for-the-correct-reason: backlog
+  4-5-implement-batch-code-to-satisfy-red-tests: backlog
+  4-6-validate-green-behavior-is-genuinely-achieved: backlog
+  4-7-sync-batch-statuses-and-enforce-per-batch-caps: backlog
+  4-8-prove-end-to-end-formal-tdd-atdd-tdad-story-execution: backlog
+  epic-4-retrospective: optional
+  epic-5: backlog
+  5-1-detect-runtime-proof-prerequisites-and-prepare-artifact-folder: backlog
+  5-2-execute-playwright-runtime-proof-and-store-evidence: backlog
+  epic-5-retrospective: optional
+  epic-6: backlog
+  6-1-write-full-execution-logs-for-workflow-runs: backlog
+  6-2-trace-phase-history-and-agent-routing-decisions: backlog
+  6-3-resume-workflow-from-a-known-phase-checkpoint: backlog
+  epic-6-retrospective: optional
+  epic-7: backlog
+  7-1-add-configurator-project-and-schema-foundation: backlog
+  7-2-generate-a-bmad-derived-workflow-from-configuration: backlog
+  7-3-configure-pi-harness-agents-hooks-and-extensions: backlog
+  7-4-add-configurator-preview-validation-and-dry-run-workflow: backlog
+  epic-7-retrospective: optional

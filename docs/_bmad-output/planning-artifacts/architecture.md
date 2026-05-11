@@ -147,6 +147,18 @@ Copy the project-local Pi scaffold into the target repository. Bootstrap hardeni
 - Vitest is optional and belongs in `devDependencies` only if extension tests are added later
 - Playwright is not part of the v1 starter
 
+**Extension Validation Contract:**
+- Each Pi TypeScript extension must define extension-local validation scripts in its own `package.json`.
+- Required extension-local scripts are:
+  - `typecheck`
+  - `lint`
+  - `test`
+  - `validate`, which runs typecheck, lint, and tests in sequence.
+- Extension validation must run from the extension folder and must not depend on host project root `node_modules`.
+- The repository should provide a root-level validation wrapper, `scripts/validate-extensions.sh`, that discovers framework-owned TypeScript extensions and runs each extension's validation command.
+- CI must run the root-level extension validation wrapper so non-conforming extensions fail validation before merge or release.
+- Validation output must identify the failing extension and failing command.
+
 **Code Organization:**
 
 ```text
