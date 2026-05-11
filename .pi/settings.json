@@ -1,5 +1,15 @@
 {
   "packages": [
     "npm:pi-subagents@0.24.2"
-  ]
+  ],
+  "subagents": {
+    "agentOverrides": {
+      "bmad-dev-story": {
+        "model": "zai/glm-5.1"
+      },
+      "bmad-agent-dev": {
+        "model": "zai/glm-5.1"
+      }
+    }
+  }
 }
