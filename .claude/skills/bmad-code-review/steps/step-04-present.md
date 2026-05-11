@@ -9,6 +9,8 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - When `{spec_file}` is set, always write findings to the story file before offering action choices.
 - `decision-needed` findings must be resolved before handling `patch` findings.
+- Every persisted or presented finding MUST include severity: `[High]`, `[Medium]`, or `[Low]`.
+- Next action is severity-aware: unresolved blocking `High` and blocking `Medium` findings require fix or human decision; `Low` findings are deferred by default and do not block story completion.
 
 ## INSTRUCTIONS
 
@@ -21,21 +23,21 @@ If zero findings remain after triage (all dismissed or none raised): state that 
 If `{spec_file}` exists and contains a Tasks/Subtasks section, append a `### Review Findings` subsection. Write all findings in this order:
 
 1. **`decision-needed`** findings (unchecked):
-   `- [ ] [Review][Decision] <Title> — <Detail>`
+   `- [ ] [Review][Decision][<Severity>] <Title> — <Detail>`
 
-2. **`patch`** findings (unchecked):
-   `- [ ] [Review][Patch] <Title> [<file>:<line>]`
+2. **blocking `patch`** findings (unchecked):
+   `- [ ] [Review][Patch][<Severity>] <Title> [<file>:<line>]`
 
-3. **`defer`** findings (checked off, marked deferred):
-   `- [x] [Review][Defer] <Title> [<file>:<line>] — deferred, pre-existing`
+3. **`defer`** findings and non-blocking `Low` findings (checked off, marked deferred):
+   `- [x] [Review][Defer][<Severity>] <Title> [<file>:<line>] — deferred, <reason>`
 
-Also append each `defer` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with description.
+Also append each `defer` finding and each non-blocking `Low` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with severity, description, and defer reason.
 
 ### 3. Present summary
 
 Announce what was written:
 
-> **Code review complete.** <D> `decision-needed`, <P> `patch`, <W> `defer`, <R> dismissed as noise.
+> **Code review complete.** <D> `decision-needed`, <P> blocking `patch`, <W> `defer`, <R> dismissed as noise. Severity: <H> High, <M> Medium, <L> Low.
 
 If `{spec_file}` is set, add: `Findings written to the review findings section in {spec_file}.`
 Otherwise add: `Findings are listed above. No story file was provided, so nothing was persisted.`
@@ -50,19 +52,19 @@ If the user chooses to defer, ask: Quick one-line reason for deferring this item
 
 ### 5. Handle `patch` findings
 
-If `patch` findings exist (including any resolved from step 4), HALT. Ask the user:
+If blocking `patch` findings exist (including any resolved from step 4), HALT. Ask the user. If only `Low` findings remain, do not halt for fixes by default; defer them and proceed to section 6 unless the user explicitly asked to fix Low findings now.
 
-If `{spec_file}` is set, present all three options (if >3 `patch` findings exist, also show option 0):
+If `{spec_file}` is set, present all three options (if >3 blocking `patch` findings exist, also show option 0):
 
-> **How would you like to handle the <Z> `patch` findings?**
+> **How would you like to handle the <Z> blocking `patch` findings?**
 > 0. **Batch-apply all** — automatically fix every non-controversial patch (recommended when there are many)
 > 1. **Fix them automatically** — I will apply fixes now
 > 2. **Leave as action items** — they are already in the story file
 > 3. **Walk through each** — let me show details before deciding
 
-If `{spec_file}` is **not** set, present only options 1 and 3 (omit option 2 — findings were not written to a file). If >3 `patch` findings exist, also show option 0:
+If `{spec_file}` is **not** set, present only options 1 and 3 (omit option 2 — findings were not written to a file). If >3 blocking `patch` findings exist, also show option 0:
 
-> **How would you like to handle the <Z> `patch` findings?**
+> **How would you like to handle the <Z> blocking `patch` findings?**
 > 0. **Batch-apply all** — automatically fix every non-controversial patch (recommended when there are many)
 > 1. **Fix them automatically** — I will apply fixes now
 > 2. **Walk through each** — let me show details before deciding
@@ -89,8 +91,9 @@ Skip this section if `{spec_file}` is not set.
 
 #### Determine new status based on review outcome
 
-- If all `decision-needed` and `patch` findings were resolved (fixed or dismissed) AND no unresolved HIGH/MEDIUM issues remain: set `{new_status}` = `done`. Update the story file Status section to `done`.
-- If `patch` findings were left as action items, or unresolved issues remain: set `{new_status}` = `in-progress`. Update the story file Status section to `in-progress`.
+- If all `decision-needed`, `High`, and blocking `Medium` findings were resolved (fixed, dismissed, or explicitly deferred by the user) AND only `Low` or non-blocking deferred findings remain: set `{new_status}` = `done`. Update the story file Status section to `done`.
+- If blocking `High`/`Medium` patch findings were left as action items, or unresolved `decision-needed` findings remain: set `{new_status}` = `in-progress`. Update the story file Status section to `in-progress`.
+- Never keep a story blocked only because `Low` findings exist; record them in `{deferred_work_file}` and proceed.
 
 Save the story file.
 
@@ -122,8 +125,9 @@ If `{sprint_status}` file does not exist, note that story status was updated in 
 Present the user with follow-up options:
 
 > **What would you like to do next?**
-> 1. **Start the next story** — run `dev-story` to pick up the next `ready-for-dev` story
-> 2. **Re-run code review** — address findings and review again
-> 3. **Done** — end the workflow
+> 1. **Start the next story** — recommended when no blocking High/Medium findings remain, even if Low findings were deferred
+> 2. **Fix blocking review findings** — recommended when unresolved High or blocking Medium findings remain
+> 3. **Re-run code review** — recommended after fixes or when review layers failed
+> 4. **Done** — end the workflow
 
 **HALT** — I am waiting for your choice. Do not proceed until the user selects an option.

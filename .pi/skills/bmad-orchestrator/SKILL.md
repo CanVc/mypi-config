@@ -97,6 +97,24 @@ subagent({
 
 If a `pi-subagents` run supports explicit `reads`, prefer passing artifact paths through that mechanism or by explicit path/read directives in `task` text. The parent may summarize decisions after a child returns, but Markdown artifacts remain the durable source of truth.
 
+## Review Severity and Next Action Policy
+
+When the parent orchestrates review workflows, every finding must carry exactly one severity: `High`, `Medium`, or `Low`.
+
+Severity meanings:
+
+- `High`: blocking. Acceptance criteria violation, regression, security/privacy issue, data loss, unsafe workflow state, or broken validation.
+- `Medium`: conditionally blocking. Blocks only when tied to acceptance criteria, security/privacy, regression risk, data integrity, or maintainability required for the current story.
+- `Low`: non-blocking. Polish, documentation, evidence quality, style, or future hardening.
+
+Parent next-action rules:
+
+1. If any unresolved `High`, blocking `Medium`, or `decision_needed` finding remains, do not mark the story done. Launch one writer/fix agent when the fix is unambiguous, or escalate to the user when a decision is required.
+2. If only `Low` findings remain, do not launch another fix/review loop by default. Mark them checked as deferred, append them to deferred work, and allow the story to advance.
+3. If a third review pass still has unresolved blocking `High`/`Medium` findings or unresolved decisions, escalate to the user instead of launching another dev agent.
+4. If a third review pass has only `Low` findings, defer them and proceed to the next story/action.
+5. Record severity counts and the selected next action in the relevant Markdown artifact; child output remains control-plane evidence until the parent writes this decision.
+
 ## Result Handling
 
 - Treat child completion output as control-plane output for the parent to inspect and synthesize.
