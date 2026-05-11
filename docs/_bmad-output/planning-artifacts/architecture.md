@@ -122,7 +122,7 @@ Selected. Best fit for Pi, BMAD, greenfield/brownfield copy-based install, and e
 - preserves the standard BMAD base while allowing v2 additions beside it
 
 **Initialization model:**
-Copy the project-local Pi scaffold into the target repository. Bootstrap hardening and overwrite rules should be handled in the first implementation story.
+Build the repository-local multi-agent runtime first, then package the project-local Pi scaffold for target-repository installation. Bootstrap hardening and overwrite rules belong to the portable bootstrap epic after the initial runtime proof.
 
 **Architectural Decisions Provided by Starter:**
 
@@ -248,7 +248,7 @@ Verified during evaluation:
 - Vitest: `4.1.4`
 - tsx: `4.21.0`
 
-**Note:** project initialization using this scaffold should be the first implementation story.
+**Note:** the first implementation story is the multi-agent dispatch foundation. Project initialization and bootstrap packaging follow after the runtime proof.
 
 ## Core Architectural Decisions
 
@@ -441,14 +441,21 @@ When such a condition occurs, the system must escalate to a human.
 ### Decision Impact Analysis
 
 **Implementation Sequence:**
-1. Define the v1 artifact contract in `.pi/references/artifact-format.md`
-2. Implement generic dispatch tool in the Pi extension layer
-3. Implement deterministic orchestrator transition rules
-4. Define v1 agent role files in `.pi/agents/`
-5. Define harness skills for standard BMAD workflow execution
-6. Add validator/review output classification and escalation rules
-7. Add optional operator UI widgets for visibility
-8. Extend the artifact contract and role set for v2 TDD workflows
+1. Build the observable multi-agent runtime first, in the repository-local `.pi/` scaffold
+2. Define the v1 artifact contract in `.pi/references/artifact-format.md`
+3. Define workflow status and transition conventions in `.pi/references/workflow-status-codes.md`
+4. Implement the generic dispatch tool in the Pi extension layer
+5. Implement deterministic orchestrator transition rules
+6. Define v1 agent role files in `.pi/agents/`
+7. Add model-routing and fresh-context session policy in the runtime
+8. Add task state and optional operator UI widgets for visibility
+9. Prove the runtime with a two-agent smoke scenario
+10. Package and harden the portable bootstrap flow for target-project installation
+11. Define harness skills for standard BMAD workflow execution and review gates
+12. Add validator/review output classification and escalation rules
+13. Extend the artifact contract and role set for v2 TDD workflows
+
+**Sequencing Constraint:** Do not treat standard BMAD review execution or portable bootstrap proof as implementation-ready until the Epic 1 runtime exists. Review gates depend on sub-agent dispatch, fresh context, model routing, and observable task state.
 
 **Cross-Component Dependencies:**
 - agent role files depend on the artifact contract
@@ -1112,8 +1119,10 @@ The architecture is considered implementation-ready with the following clarifica
 - let the extension runtime enforce transitions and escalation
 
 **First Implementation Priority:**
-1. define `.pi/references/artifact-format.md`
-2. define `.pi/references/workflow-status-codes.md`
-3. implement the generic dispatch tool
-4. implement deterministic transition rules in the extension
+1. implement Epic 1: Observable Pi Multi-Agent Runtime
+2. define `.pi/references/artifact-format.md`
+3. define `.pi/references/workflow-status-codes.md`
+4. implement the generic dispatch tool
+5. implement deterministic transition rules in the extension
+6. prove the two-agent runtime smoke scenario before bootstrap packaging or review-dependent workflow proof
 

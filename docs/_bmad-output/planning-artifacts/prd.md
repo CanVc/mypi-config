@@ -342,6 +342,8 @@ Reference workflow examples and artifact specifications in `/research/` remain p
 - Iteration cap per story (standard dev-review loop)
 - TDD-derived workflows, test-architect roles, and runtime proof are explicitly out of v1 scope
 
+**v1 sequencing constraint:** The MVP must build the observable multi-agent runtime first. Review-dependent story-to-done validation and portable bootstrap proof come after sub-agent dispatch, fresh-context execution, model routing, and task-state visibility exist.
+
 ### Post-MVP Features
 
 **v2 — TDD Layer:**

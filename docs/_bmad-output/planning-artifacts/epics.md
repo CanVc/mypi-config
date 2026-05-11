@@ -123,8 +123,8 @@ NFR11: A builder familiar with BMAD identifies trigger, phases, and output artif
 
 ### Additional Requirements
 
-- Selected starter template: custom project-local Pi scaffold with embedded extension package. This is the architectural starter and should shape Epic 1 Story 1.
-- Project initialization using the custom project-local Pi scaffold should be the first implementation story, including bootstrap hardening and overwrite rules.
+- Selected starter template: custom project-local Pi scaffold with embedded extension package. This is the architectural starter for the portable bootstrap epic, while roadmap execution starts with the multi-agent runtime epic.
+- Project initialization using the custom project-local Pi scaffold belongs to the portable bootstrap epic after the initial multi-agent runtime proof; bootstrap hardening and overwrite rules remain required before external project installation.
 - Framework assets must live under `.pi/`, with agent role definitions in `.pi/agents/`, workflow skills in `.pi/skills/`, extension runtime logic in `.pi/extensions/`, and shared references in `.pi/references/`.
 - TypeScript is used for Pi extensions; Markdown is used for Pi agents, BMAD skills, and workflow artifacts; Node.js is the runtime.
 - No separate UI or web frontend is required; Pi TUI is the operator interface, and any extra workflow UI belongs in Pi extension widgets, dashboards, status lines, or overlays.
@@ -154,7 +154,7 @@ NFR11: A builder familiar with BMAD identifies trigger, phases, and output artif
 - Framework-owned `.pi/` assets must be installable/copiable into target projects and must not depend on project documentation in `docs/`.
 - Brownfield install should update framework-owned `.pi/` assets while preserving project-owned assets and avoiding destructive overwrites of BMAD v1-compatible assets.
 - Secrets must remain outside committed configuration; role/tool boundaries must be explicit; hooks and shell-executing behavior must remain scoped and auditable.
-- First implementation priorities from architecture are: define `.pi/references/artifact-format.md`, define `.pi/references/workflow-status-codes.md`, implement the generic dispatch tool, and implement deterministic transition rules in the extension.
+- First implementation priorities from architecture are: implement the observable multi-agent runtime first, including `.pi/references/artifact-format.md`, `.pi/references/workflow-status-codes.md`, the generic dispatch tool, and deterministic transition rules in the extension.
 
 ### UX Design Requirements
 
@@ -162,13 +162,13 @@ No UX Design document was found in the planning artifacts, so no UX Design Requi
 
 ### FR Coverage Map
 
-FR1: Epic 1 - Portable Harness Bootstrap enables single-command harness installation into a target project.
+FR1: Epic 2 - Portable Harness Bootstrap enables single-command harness installation into a target project.
 
-FR2: Epic 1 - Portable Harness Bootstrap supports declaring available models in Pi `models.json` during initial setup.
+FR2: Epic 2 - Portable Harness Bootstrap supports declaring available models in Pi `models.json` during initial setup.
 
-FR3: Epic 1 - Portable Harness Bootstrap makes model assignment editable through agent definition files.
+FR3: Epic 2 - Portable Harness Bootstrap makes model assignment editable through agent definition files.
 
-FR4: Epic 1 - Portable Harness Bootstrap enables the first workflow to run after bootstrap without mandatory extra configuration.
+FR4: Epic 2 - Portable Harness Bootstrap enables the first workflow to run after bootstrap without mandatory extra configuration.
 
 FR5: Epic 3 - Standard BMAD Story-to-Done Execution uses a BMAD story file as the canonical workflow input.
 
@@ -178,9 +178,9 @@ FR7: Epic 3 - Standard BMAD Story-to-Done Execution runs the standard BMAD `code
 
 FR8: Epic 3 - Standard BMAD Story-to-Done Execution supports two sequential review passes on a completed story.
 
-FR9: Epic 2 - Observable Pi Multi-Agent Runtime launches each workflow stage with a fresh, bounded context assembled from artifacts or task context.
+FR9: Epic 1 - Observable Pi Multi-Agent Runtime launches each workflow stage with a fresh, bounded context assembled from artifacts or task context.
 
-FR10: Epic 2 - Observable Pi Multi-Agent Runtime routes each workflow stage to the model defined in its agent file.
+FR10: Epic 1 - Observable Pi Multi-Agent Runtime routes each workflow stage to the model defined in its agent file.
 
 FR11: Epic 3 - Standard BMAD Story-to-Done Execution enforces iteration caps per story and stops when the cap is reached.
 
@@ -192,25 +192,25 @@ FR14: Epic 3 - Standard BMAD Story-to-Done Execution verifies lint passes cleanl
 
 FR15: Epic 3 - Standard BMAD Story-to-Done Execution blocks story completion when review passes return blocking findings.
 
-FR16: Epic 2 - Observable Pi Multi-Agent Runtime wires a multi-agent team through a Pi TypeScript extension.
+FR16: Epic 1 - Observable Pi Multi-Agent Runtime wires a multi-agent team through a Pi TypeScript extension.
 
-FR17: Epic 2 - Observable Pi Multi-Agent Runtime launches sub-agents with fresh context inside an active loop.
+FR17: Epic 1 - Observable Pi Multi-Agent Runtime launches sub-agents with fresh context inside an active loop.
 
-FR18: Epic 2 - Observable Pi Multi-Agent Runtime configures Pi UI layout and display for the agent team.
+FR18: Epic 1 - Observable Pi Multi-Agent Runtime configures Pi UI layout and display for the agent team.
 
-FR19: Epic 2 - Observable Pi Multi-Agent Runtime shows which sub-agent is active and what it is doing in the Pi UI.
+FR19: Epic 1 - Observable Pi Multi-Agent Runtime shows which sub-agent is active and what it is doing in the Pi UI.
 
 FR20: Epic 3 - Standard BMAD Story-to-Done Execution has formal workflow sub-agents consume BMAD markdown artifacts directly as context sources.
 
-FR21: Epic 2 - Observable Pi Multi-Agent Runtime supports direct message-content context for informal/conversational workflows when no canonical artifact exists.
+FR21: Epic 1 - Observable Pi Multi-Agent Runtime supports direct message-content context for informal/conversational workflows when no canonical artifact exists.
 
-FR22: Epic 2 - Observable Pi Multi-Agent Runtime assigns distinct models to sub-agents in the same team.
+FR22: Epic 1 - Observable Pi Multi-Agent Runtime assigns distinct models to sub-agents in the same team.
 
-FR23: Epic 2 - Observable Pi Multi-Agent Runtime routes one sub-agent's output as another sub-agent's input in a defined sequence.
+FR23: Epic 1 - Observable Pi Multi-Agent Runtime routes one sub-agent's output as another sub-agent's input in a defined sequence.
 
-FR24: Epic 2 - Observable Pi Multi-Agent Runtime defines descriptive activity titles for Pi terminal sessions.
+FR24: Epic 1 - Observable Pi Multi-Agent Runtime defines descriptive activity titles for Pi terminal sessions.
 
-FR25: Epic 2 - Observable Pi Multi-Agent Runtime displays a task/todo list tracking workflow pending, in-progress, and completed tasks.
+FR25: Epic 1 - Observable Pi Multi-Agent Runtime displays a task/todo list tracking workflow pending, in-progress, and completed tasks.
 
 FR26: Epic 4 - Formal TDD/ATDD/TDAD Workflow Execution lets the builder select a TDD/ATDD/TDAD workflow profile for a story.
 
@@ -246,17 +246,19 @@ FR41: Epic 7 - Advanced Harness Configurator configures Pi harness setup through
 
 ## Epic List
 
-### Epic 1: Portable Harness Bootstrap
+### Epic 1: Observable Pi Multi-Agent Runtime
 
-The builder can install the `mypi-config` scaffold into a target project, verify prerequisites, configure available models, and run an initial workflow without mandatory extra configuration.
+The builder can immediately launch an orchestrator-backed Pi multi-agent team, dispatch sub-agents with fresh context, verify model routing by agent, observe widgets/labels/tasks in the Pi UI, and see sub-agents consume orchestrator-assigned tasks.
+
+**FRs covered:** FR9, FR10, FR16, FR17, FR18, FR19, FR21, FR22, FR23, FR24, FR25
+
+### Epic 2: Portable Harness Bootstrap
+
+The builder can package and install the `mypi-config` scaffold into a target project, verify prerequisites, configure available models, and run an initial workflow without mandatory extra configuration.
 
 **FRs covered:** FR1, FR2, FR3, FR4
 
-### Epic 2: Observable Pi Multi-Agent Runtime
-
-The builder can launch an orchestrator-backed Pi multi-agent team, dispatch sub-agents with fresh context, verify model routing by agent, observe widgets/labels/tasks in the Pi UI, and see sub-agents consume orchestrator-assigned tasks.
-
-**FRs covered:** FR9, FR10, FR16, FR17, FR18, FR19, FR21, FR22, FR23, FR24, FR25
+**Implementation sequencing note:** Multi-agent runtime is Epic 1. Portable bootstrap is Epic 2 because review-capable workflows should not be validated before sub-agent dispatch, fresh-context execution, and model routing exist.
 
 ### Epic 3: Standard BMAD Story-to-Done Execution
 
@@ -288,11 +290,217 @@ The builder can create new BMAD-derived workflows and configure Pi harness setup
 
 **FRs covered:** FR40, FR41
 
-## Epic 1: Portable Harness Bootstrap
+## Epic 1: Observable Pi Multi-Agent Runtime
 
-The builder can install the `mypi-config` scaffold into a target project, verify prerequisites, configure available models, and run an initial workflow without mandatory extra configuration.
+The builder can immediately launch an orchestrator-backed Pi multi-agent team, dispatch sub-agents with fresh context, verify model routing by agent, observe widgets/labels/tasks in the Pi UI, and see sub-agents consume orchestrator-assigned tasks.
 
-### Story 1.1: Set Up Initial Project from the Project-Local Pi Scaffold Starter
+**Sequencing Note:** This is the first implementation epic. Build the multi-agent runtime in-place before validating review-capable BMAD workflows or packaging the harness for external project bootstrap.
+
+### Story 1.1: Implement the Generic Sub-Agent Dispatch Tool
+
+As a builder,
+I want the Pi extension to dispatch named sub-agents through one generic tool,
+So that workflows can route work to different agents without hardcoding role-specific launch logic.
+
+**Acceptance Criteria:**
+
+**Given** the `bmad-orchestrator` extension scaffold is available or created by this story
+**When** a dispatch request is submitted with an agent identifier, session mode, task, and context input
+**Then** the extension validates the request shape
+**And** it rejects missing or unknown required fields.
+
+**Given** a valid dispatch request names a known agent
+**When** dispatch executes
+**Then** the extension launches the requested agent through Pi
+**And** the runtime output records the canonical agent identifier.
+
+**Given** a dispatch request names an unknown agent
+**When** dispatch validation runs
+**Then** dispatch is refused
+**And** the error names the unknown agent and the allowed agent identifiers.
+
+**Given** a workflow needs to pass informal context
+**When** the dispatch request includes direct message content
+**Then** the sub-agent receives that content as its task context
+**And** no canonical artifact path is required for informal workflows.
+
+**Given** dispatch completes
+**When** the orchestrator receives the completion signal
+**Then** the signal is treated as control-plane output only
+**And** durable workflow truth remains in artifacts when artifacts are part of the workflow.
+
+### Story 1.2: Add Agent Definitions and Model Routing Contract
+
+As a builder,
+I want each sub-agent to declare its own model assignment in its agent definition,
+So that different workflow stages can use different models without changing runtime code.
+
+**Acceptance Criteria:**
+
+**Given** the scaffold includes agent definition files
+**When** the builder opens each file
+**Then** the agent identifier, role label, and model assignment are readable
+**And** file names use canonical lowercase kebab-case.
+
+**Given** the extension prepares to dispatch an agent
+**When** it resolves the agent definition
+**Then** it uses the model assignment from the target agent file
+**And** it does not use a single global workflow model by default.
+
+**Given** two sub-agents are assigned different models
+**When** both are dispatched in the same team run
+**Then** each sub-agent runs with its configured model
+**And** the run output records which model reference was selected for each agent.
+
+**Given** a builder edits an agent model assignment
+**When** validation is run
+**Then** the changed model reference is detected
+**And** no extension source code change is required.
+
+**Given** an agent file lacks a valid model assignment
+**When** dispatch validation runs
+**Then** dispatch is blocked for that agent
+**And** the error names the invalid agent file and required fix.
+
+### Story 1.3: Enforce Fresh-Context Session Policy
+
+As a builder,
+I want sub-agents to start with fresh context by default,
+So that workflow stages do not inherit hidden conversation history or drift across tasks.
+
+**Acceptance Criteria:**
+
+**Given** a dispatch request does not explicitly request an allowed resume case
+**When** the sub-agent is launched
+**Then** the extension starts the sub-agent in fresh-context mode
+**And** prior agent conversation history is not included.
+
+**Given** the workflow requests session reuse
+**When** the session policy validates the request
+**Then** reuse is allowed only for same-role red repair after red-validator rejection or same-role green repair after green-validator rejection
+**And** all other reuse requests are rejected.
+
+**Given** a validator or final reviewer is dispatched
+**When** session policy is applied
+**Then** the session is always fresh
+**And** any requested resume mode is ignored or blocked with a policy error.
+
+**Given** a dispatch payload includes artifact paths
+**When** fresh context is assembled
+**Then** the sub-agent receives only the task and explicitly named artifacts
+**And** no previous runtime transcript is appended.
+
+**Given** session policy rejects a request
+**When** the orchestrator receives the rejection
+**Then** execution stops safely
+**And** the message identifies the requested agent, session mode, and violated policy.
+
+### Story 1.4: Add Orchestrator Task Routing and Task List State
+
+As a builder,
+I want the orchestrator to route sequenced tasks to sub-agents and expose task state,
+So that I can see which tasks are pending, in progress, and completed during a team run.
+
+**Acceptance Criteria:**
+
+**Given** a team run is started
+**When** the orchestrator creates its task list
+**Then** each task has an identifier, target agent, status, title, and context source
+**And** statuses use a fixed vocabulary.
+
+**Given** a task is pending
+**When** the orchestrator dispatches its target agent
+**Then** the task status changes to in-progress
+**And** the active agent identifier is recorded.
+
+**Given** a sub-agent completes successfully
+**When** the orchestrator processes the completion signal
+**Then** the task status changes to completed
+**And** the next eligible task can be dispatched.
+
+**Given** one sub-agent output is needed by another sub-agent
+**When** the orchestrator routes the next task
+**Then** the previous output is passed as declared task context or artifact path
+**And** the routing decision is recorded.
+
+**Given** a task fails or cannot be classified
+**When** the orchestrator updates state
+**Then** the task is marked blocked or failed
+**And** the builder receives a cause and recommended next action.
+
+### Story 1.5: Add Pi UI Visibility for Agent Activity
+
+As a builder,
+I want Pi UI visibility into active sub-agents, role labels, activity titles, and task progress,
+So that I can confirm the multi-agent runtime is doing the expected work.
+
+**Acceptance Criteria:**
+
+**Given** a team run is active
+**When** the Pi UI renders the team view
+**Then** visible sub-agents display their configured role labels
+**And** hidden or inactive agents follow the configured layout rules.
+
+**Given** a sub-agent is dispatched
+**When** it begins work
+**Then** the UI identifies which sub-agent is currently active
+**And** the displayed activity title describes the current task.
+
+**Given** multiple terminal sessions are running in parallel
+**When** the builder views the terminal UI
+**Then** each session has a descriptive activity title
+**And** the title makes the running agent and task distinguishable.
+
+**Given** the orchestrator task list changes
+**When** tasks move from pending to in-progress or completed
+**Then** the Pi UI task/todo list reflects the current state
+**And** stale task states are not shown as active.
+
+**Given** UI rendering cannot access required runtime state
+**When** the team view is displayed
+**Then** it shows a safe degraded message
+**And** workflow execution is not treated as successful solely because UI rendering succeeded.
+
+### Story 1.6: Prove Multi-Agent Runtime with a Two-Agent Smoke Scenario
+
+As a builder,
+I want a small observable two-agent scenario,
+So that I can prove dispatch, model routing, fresh context, UI visibility, and task handoff work before running BMAD workflows.
+
+**Acceptance Criteria:**
+
+**Given** the multi-agent runtime is installed
+**When** the builder starts the smoke scenario
+**Then** the orchestrator creates at least two ordered tasks for two distinct sub-agents
+**And** each task appears in the task list.
+
+**Given** the first sub-agent completes
+**When** the orchestrator dispatches the second sub-agent
+**Then** the second sub-agent receives the declared output or context from the first task
+**And** it does not inherit the first sub-agent's conversation history.
+
+**Given** the two sub-agents have different model assignments
+**When** the smoke run completes
+**Then** the run evidence shows each sub-agent used its configured model reference
+**And** no global override hides the per-agent routing.
+
+**Given** the smoke run is observed in Pi
+**When** each sub-agent becomes active
+**Then** the UI shows the active agent, role label, activity title, and current task status
+**And** completed tasks are marked completed.
+
+**Given** the smoke scenario finishes
+**When** the builder reviews the result
+**Then** the runtime is considered ready for standard BMAD story-to-done integration
+**And** failures include actionable diagnostic output.
+
+## Epic 2: Portable Harness Bootstrap
+
+The builder can package and install the `mypi-config` scaffold into a target project after the in-repository multi-agent runtime exists, verify prerequisites, configure available models, and run an initial workflow without mandatory extra configuration.
+
+**Sequencing Note:** Epic 2 packages and hardens the runtime created in Epic 1 for repeatable installation into target projects.
+
+### Story 2.1: Set Up Initial Project from the Project-Local Pi Scaffold Starter
 
 As a builder,
 I want an initial project-local Pi scaffold starter with the expected framework directories and placeholder files,
@@ -330,7 +538,7 @@ So that `mypi-config` has a stable installable structure for agents, skills, ext
 **Then** no provider API keys, credentials, or local secrets are present in committed scaffold files
 **And** the scaffold does not require root-owned paths.
 
-### Story 1.2: Add Bootstrap Installation Script with Safe Overwrite Rules
+### Story 2.2: Add Bootstrap Installation Script with Safe Overwrite Rules
 
 As a builder,
 I want a single bootstrap command that installs the scaffold into a target project safely,
@@ -363,7 +571,7 @@ So that I can reuse `mypi-config` across projects without manually copying files
 **Then** standard BMAD files remain present and unmodified
 **And** `mypi-config` files are installed beside them.
 
-### Story 1.3: Add Workstation and Dependency Verification
+### Story 2.3: Add Workstation and Dependency Verification
 
 As a builder,
 I want a prereq verification script that checks the local workstation and target project dependencies,
@@ -396,7 +604,7 @@ So that bootstrap failures are diagnosed before workflow execution begins.
 **Then** the script does not require elevated permissions
 **And** it performs only read-only environment checks.
 
-### Story 1.4: Document and Validate Model Configuration
+### Story 2.4: Document and Validate Model Configuration
 
 As a builder,
 I want clear model configuration documentation and validation for Pi `models.json`,
@@ -429,7 +637,7 @@ So that workflow agents can route to declared models without hardcoding provider
 **Then** it names the missing or invalid model assignment
 **And** it recommends updating Pi `models.json` or the relevant agent definition.
 
-### Story 1.5: Add Extension Validation and CI Gate
+### Story 2.5: Add Extension Validation and CI Gate
 
 As a builder,
 I want extension validation commands and CI enforcement for Pi TypeScript extensions,
@@ -472,7 +680,7 @@ So that every framework extension proves it follows the standard template and pa
 **Then** the result confirms all discovered extensions passed typecheck, lint, and tests
 **And** the harness is eligible for the post-bootstrap smoke workflow.
 
-### Story 1.6: Run First Post-Bootstrap Smoke Workflow
+### Story 2.6: Run First Post-Bootstrap Smoke Workflow
 
 As a builder,
 I want a minimal post-bootstrap smoke workflow,
@@ -502,210 +710,8 @@ So that I can confirm the installed harness is runnable without extra mandatory 
 
 **Given** the smoke workflow succeeds
 **When** the builder reviews the output
-**Then** the harness-level install is considered ready for Epic 2 runtime work
+**Then** the harness-level install is considered ready for Epic 3 standard BMAD story-to-done work
 **And** the result can be used as the v1 bootstrap acceptance proof.
-
-## Epic 2: Observable Pi Multi-Agent Runtime
-
-The builder can launch an orchestrator-backed Pi multi-agent team, dispatch sub-agents with fresh context, verify model routing by agent, observe widgets/labels/tasks in the Pi UI, and see sub-agents consume orchestrator-assigned tasks.
-
-### Story 2.1: Implement the Generic Sub-Agent Dispatch Tool
-
-As a builder,
-I want the Pi extension to dispatch named sub-agents through one generic tool,
-So that workflows can route work to different agents without hardcoding role-specific launch logic.
-
-**Acceptance Criteria:**
-
-**Given** the `bmad-orchestrator` extension is available
-**When** a dispatch request is submitted with an agent identifier, session mode, task, and context input
-**Then** the extension validates the request shape
-**And** it rejects missing or unknown required fields.
-
-**Given** a valid dispatch request names a known agent
-**When** dispatch executes
-**Then** the extension launches the requested agent through Pi
-**And** the runtime output records the canonical agent identifier.
-
-**Given** a dispatch request names an unknown agent
-**When** dispatch validation runs
-**Then** dispatch is refused
-**And** the error names the unknown agent and the allowed agent identifiers.
-
-**Given** a workflow needs to pass informal context
-**When** the dispatch request includes direct message content
-**Then** the sub-agent receives that content as its task context
-**And** no canonical artifact path is required for informal workflows.
-
-**Given** dispatch completes
-**When** the orchestrator receives the completion signal
-**Then** the signal is treated as control-plane output only
-**And** durable workflow truth remains in artifacts when artifacts are part of the workflow.
-
-### Story 2.2: Add Agent Definitions and Model Routing Contract
-
-As a builder,
-I want each sub-agent to declare its own model assignment in its agent definition,
-So that different workflow stages can use different models without changing runtime code.
-
-**Acceptance Criteria:**
-
-**Given** the scaffold includes agent definition files
-**When** the builder opens each file
-**Then** the agent identifier, role label, and model assignment are readable
-**And** file names use canonical lowercase kebab-case.
-
-**Given** the extension prepares to dispatch an agent
-**When** it resolves the agent definition
-**Then** it uses the model assignment from the target agent file
-**And** it does not use a single global workflow model by default.
-
-**Given** two sub-agents are assigned different models
-**When** both are dispatched in the same team run
-**Then** each sub-agent runs with its configured model
-**And** the run output records which model reference was selected for each agent.
-
-**Given** a builder edits an agent model assignment
-**When** validation is run
-**Then** the changed model reference is detected
-**And** no extension source code change is required.
-
-**Given** an agent file lacks a valid model assignment
-**When** dispatch validation runs
-**Then** dispatch is blocked for that agent
-**And** the error names the invalid agent file and required fix.
-
-### Story 2.3: Enforce Fresh-Context Session Policy
-
-As a builder,
-I want sub-agents to start with fresh context by default,
-So that workflow stages do not inherit hidden conversation history or drift across tasks.
-
-**Acceptance Criteria:**
-
-**Given** a dispatch request does not explicitly request an allowed resume case
-**When** the sub-agent is launched
-**Then** the extension starts the sub-agent in fresh-context mode
-**And** prior agent conversation history is not included.
-
-**Given** the workflow requests session reuse
-**When** the session policy validates the request
-**Then** reuse is allowed only for same-role red repair after red-validator rejection or same-role green repair after green-validator rejection
-**And** all other reuse requests are rejected.
-
-**Given** a validator or final reviewer is dispatched
-**When** session policy is applied
-**Then** the session is always fresh
-**And** any requested resume mode is ignored or blocked with a policy error.
-
-**Given** a dispatch payload includes artifact paths
-**When** fresh context is assembled
-**Then** the sub-agent receives only the task and explicitly named artifacts
-**And** no previous runtime transcript is appended.
-
-**Given** session policy rejects a request
-**When** the orchestrator receives the rejection
-**Then** execution stops safely
-**And** the message identifies the requested agent, session mode, and violated policy.
-
-### Story 2.4: Add Orchestrator Task Routing and Task List State
-
-As a builder,
-I want the orchestrator to route sequenced tasks to sub-agents and expose task state,
-So that I can see which tasks are pending, in progress, and completed during a team run.
-
-**Acceptance Criteria:**
-
-**Given** a team run is started
-**When** the orchestrator creates its task list
-**Then** each task has an identifier, target agent, status, title, and context source
-**And** statuses use a fixed vocabulary.
-
-**Given** a task is pending
-**When** the orchestrator dispatches its target agent
-**Then** the task status changes to in-progress
-**And** the active agent identifier is recorded.
-
-**Given** a sub-agent completes successfully
-**When** the orchestrator processes the completion signal
-**Then** the task status changes to completed
-**And** the next eligible task can be dispatched.
-
-**Given** one sub-agent output is needed by another sub-agent
-**When** the orchestrator routes the next task
-**Then** the previous output is passed as declared task context or artifact path
-**And** the routing decision is recorded.
-
-**Given** a task fails or cannot be classified
-**When** the orchestrator updates state
-**Then** the task is marked blocked or failed
-**And** the builder receives a cause and recommended next action.
-
-### Story 2.5: Add Pi UI Visibility for Agent Activity
-
-As a builder,
-I want Pi UI visibility into active sub-agents, role labels, activity titles, and task progress,
-So that I can confirm the multi-agent runtime is doing the expected work.
-
-**Acceptance Criteria:**
-
-**Given** a team run is active
-**When** the Pi UI renders the team view
-**Then** visible sub-agents display their configured role labels
-**And** hidden or inactive agents follow the configured layout rules.
-
-**Given** a sub-agent is dispatched
-**When** it begins work
-**Then** the UI identifies which sub-agent is currently active
-**And** the displayed activity title describes the current task.
-
-**Given** multiple terminal sessions are running in parallel
-**When** the builder views the terminal UI
-**Then** each session has a descriptive activity title
-**And** the title makes the running agent and task distinguishable.
-
-**Given** the orchestrator task list changes
-**When** tasks move from pending to in-progress or completed
-**Then** the Pi UI task/todo list reflects the current state
-**And** stale task states are not shown as active.
-
-**Given** UI rendering cannot access required runtime state
-**When** the team view is displayed
-**Then** it shows a safe degraded message
-**And** workflow execution is not treated as successful solely because UI rendering succeeded.
-
-### Story 2.6: Prove Multi-Agent Runtime with a Two-Agent Smoke Scenario
-
-As a builder,
-I want a small observable two-agent scenario,
-So that I can prove dispatch, model routing, fresh context, UI visibility, and task handoff work before running BMAD workflows.
-
-**Acceptance Criteria:**
-
-**Given** the multi-agent runtime is installed
-**When** the builder starts the smoke scenario
-**Then** the orchestrator creates at least two ordered tasks for two distinct sub-agents
-**And** each task appears in the task list.
-
-**Given** the first sub-agent completes
-**When** the orchestrator dispatches the second sub-agent
-**Then** the second sub-agent receives the declared output or context from the first task
-**And** it does not inherit the first sub-agent's conversation history.
-
-**Given** the two sub-agents have different model assignments
-**When** the smoke run completes
-**Then** the run evidence shows each sub-agent used its configured model reference
-**And** no global override hides the per-agent routing.
-
-**Given** the smoke run is observed in Pi
-**When** each sub-agent becomes active
-**Then** the UI shows the active agent, role label, activity title, and current task status
-**And** completed tasks are marked completed.
-
-**Given** the smoke scenario finishes
-**When** the builder reviews the result
-**Then** the runtime is considered ready for standard BMAD story-to-done integration
-**And** failures include actionable diagnostic output.
 
 ## Epic 3: Standard BMAD Story-to-Done Execution
 

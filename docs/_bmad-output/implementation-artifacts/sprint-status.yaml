@@ -33,6 +33,11 @@
 # - Stories can be worked in parallel if team capacity allows
 # - Developer typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+#
+# IMPLEMENTATION SEQUENCE OVERRIDE:
+# - Epic 1 is Observable Pi Multi-Agent Runtime and starts immediately.
+# - Epic 2 is Portable Harness Bootstrap and packages/hardens the runtime after Epic 1.
+# - Do not start Epic 3 review-dependent workflow proof until Epic 1 runtime and Epic 2 bootstrap proof are complete.
 
 generated: 2026-05-11
 last_updated: 2026-05-11
@@ -43,20 +48,20 @@ story_location: docs/_bmad-output/implementation-artifacts
 
 development_status:
   epic-1: in-progress
-  1-1-set-up-initial-project-from-the-project-local-pi-scaffold-starter: ready-for-dev
-  1-2-add-bootstrap-installation-script-with-safe-overwrite-rules: backlog
-  1-3-add-workstation-and-dependency-verification: backlog
-  1-4-document-and-validate-model-configuration: backlog
-  1-5-add-extension-validation-and-ci-gate: backlog
-  1-6-run-first-post-bootstrap-smoke-workflow: backlog
+  1-1-implement-the-generic-sub-agent-dispatch-tool: ready-for-dev
+  1-2-add-agent-definitions-and-model-routing-contract: backlog
+  1-3-enforce-fresh-context-session-policy: backlog
+  1-4-add-orchestrator-task-routing-and-task-list-state: backlog
+  1-5-add-pi-ui-visibility-for-agent-activity: backlog
+  1-6-prove-multi-agent-runtime-with-a-two-agent-smoke-scenario: backlog
   epic-1-retrospective: optional
   epic-2: backlog
-  2-1-implement-the-generic-sub-agent-dispatch-tool: backlog
-  2-2-add-agent-definitions-and-model-routing-contract: backlog
-  2-3-enforce-fresh-context-session-policy: backlog
-  2-4-add-orchestrator-task-routing-and-task-list-state: backlog
-  2-5-add-pi-ui-visibility-for-agent-activity: backlog
-  2-6-prove-multi-agent-runtime-with-a-two-agent-smoke-scenario: backlog
+  2-1-set-up-initial-project-from-the-project-local-pi-scaffold-starter: backlog
+  2-2-add-bootstrap-installation-script-with-safe-overwrite-rules: backlog
+  2-3-add-workstation-and-dependency-verification: backlog
+  2-4-document-and-validate-model-configuration: backlog
+  2-5-add-extension-validation-and-ci-gate: backlog
+  2-6-run-first-post-bootstrap-smoke-workflow: backlog
   epic-2-retrospective: optional
   epic-3: backlog
   3-1-accept-a-canonical-bmad-story-file-as-workflow-input: backlog
