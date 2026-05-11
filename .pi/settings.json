@@ -6,9 +6,6 @@
     "agentOverrides": {
       "bmad-dev-story": {
         "model": "zai/glm-5.1"
-      },
-      "bmad-agent-dev": {
-        "model": "zai/glm-5.1"
       }
     }
   }
