@@ -9,3 +9,7 @@
 - [Low] Parent guidance should explicitly verify `subagent` is listed/active before delegation and HALT without state updates if unavailable — deferred as non-blocking orchestration hardening.
 - [Medium] Artifact-path validation should constrain resolved paths to approved BMAD artifact roots, not only readability — deferred as security/process hardening beyond Story 1.1's initial dispatch substrate scope.
 - [Low] Live child dispatch identity evidence should include `agentScope`, `context`, and `taskSource` consistently — deferred as evidence-quality hardening; current AC3 fallback evidence is sufficient for Story 1.1.
+
+## Deferred from: code review round 3 of 1-2-add-agent-definitions-and-model-routing-contract (2026-05-12)
+
+- [Low] Smoke-management checklist/evidence detail should be reconciled in the story artifact — deferred as non-blocking evidence/bookkeeping polish; unresolved Medium findings already block completion.

@@ -1,0 +1,61 @@
+--- a/src/agents/agents.ts
++++ b/src/agents/agents.ts
+@@ -698,10 +698,12 @@
+ 	const projectRoot = findNearestProjectRoot(cwd);
+ 	if (!projectRoot) return { readDirs: [], preferredDir: null };
+ 
+-	const legacyDir = path.join(projectRoot, ".agents");
++	// Agent discovery uses .pi/agents/ only.
++	// Legacy .agents/ is excluded from agent discovery to prevent skill files
++	// (which have name+description frontmatter) from becoming unintended dispatchable agents.
++	// Skill discovery (skills.ts) still reads from .agents/skills/ independently.
+ 	const preferredDir = path.join(projectRoot, ".pi", "agents");
+ 	const readDirs: string[] = [];
+-	if (isDirectory(legacyDir)) readDirs.push(legacyDir);
+ 	if (isDirectory(preferredDir)) readDirs.push(preferredDir);
+ 
+ 	return {
+@@ -743,7 +745,21 @@
+ 	const userAgentsNew = scope === "project" ? [] : loadAgentsFromDir(userDirNew, "user");
+ 	const userAgents = [...userAgentsOld, ...userAgentsNew];
+ 
+-	const projectAgents = scope === "user" ? [] : projectAgentDirs.flatMap((dir) => loadAgentsFromDir(dir, "project"));
++	const projectAgentsRaw = scope === "user" ? [] : projectAgentDirs.flatMap((dir) => loadAgentsFromDir(dir, "project"));
++
++	// Apply user and project overrides to project-defined agents.
++	// Uses the same precedence as builtins: project override > user override.
++	const projectAgents = projectAgentsRaw.map((agent) => {
++		const projectOverride = projectSettings.overrides[agent.name];
++		if (projectOverride && projectSettingsPath) {
++			return applyBuiltinOverride(agent, projectOverride, { scope: "project", path: projectSettingsPath });
++		}
++		const userOverride = userSettings.overrides[agent.name];
++		if (userOverride) {
++			return applyBuiltinOverride(agent, userOverride, { scope: "user", path: userSettingsPath });
++		}
++		return agent;
++	});
+ 	const agents = mergeAgentsForScope(scope, userAgents, projectAgents, builtinAgents)
+ 		.filter((agent) => agent.disabled !== true);
+ 
+@@ -789,7 +805,19 @@
+ 			projectMap.set(agent.name, agent);
+ 		}
+ 	}
+-	const project = Array.from(projectMap.values());
++	// Apply user and project overrides to project-defined agents.
++	// Uses the same precedence as builtins: project override > user override.
++	const project = Array.from(projectMap.values()).map((agent) => {
++		const projectOverride = projectSettings.overrides[agent.name];
++		if (projectOverride && projectSettingsPath) {
++			return applyBuiltinOverride(agent, projectOverride, { scope: "project", path: projectSettingsPath });
++		}
++		const userOverride = userSettings.overrides[agent.name];
++		if (userOverride) {
++			return applyBuiltinOverride(agent, userOverride, { scope: "user", path: userSettingsPath });
++		}
++		return agent;
++	});
+ 
+ 	const chainMap = new Map<string, ChainConfig>();
+ 	for (const dir of projectChainDirs) {

@@ -4,9 +4,6 @@
   ],
   "subagents": {
     "agentOverrides": {
-      "bmad-dev-story": {
-        "model": "zai/glm-5.1"
-      },
       "reviewer": {
         "model": "openai-codex/gpt-5.5"
       }
