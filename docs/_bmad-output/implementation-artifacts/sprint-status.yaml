@@ -1,5 +1,5 @@
 # generated: 2026-05-11
-# last_updated: 2026-05-11
+# last_updated: 2026-05-12
 # project: mypi-config
 # project_key: NOKEY
 # tracking_system: file-system
@@ -40,7 +40,7 @@
 # - Do not start Epic 3 review-dependent workflow proof until Epic 1 runtime and Epic 2 bootstrap proof are complete.
 
 generated: 2026-05-11
-last_updated: 2026-05-11
+last_updated: 2026-05-12
 project: mypi-config
 project_key: NOKEY
 tracking_system: file-system
@@ -49,7 +49,7 @@ story_location: docs/_bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
   1-1-implement-the-generic-sub-agent-dispatch-tool: done
-  1-2-add-agent-definitions-and-model-routing-contract: backlog
+  1-2-add-agent-definitions-and-model-routing-contract: ready-for-dev
   1-3-enforce-fresh-context-session-policy: backlog
   1-4-add-orchestrator-task-routing-and-task-list-state: backlog
   1-5-add-pi-ui-visibility-for-agent-activity: backlog
