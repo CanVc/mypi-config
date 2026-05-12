@@ -342,20 +342,41 @@ So that workflows can launch focused sub-agents without maintaining custom role-
 ### Story 1.2: Add Agent Definitions and Model Routing Contract
 
 As a builder,
-I want each sub-agent to declare its own model assignment in its agent definition,
-So that different workflow stages can use different models without changing runtime code.
+I want each sub-agent to declare its own model assignment in a canonical `.pi/agents/` agent definition or supported settings override,
+So that different workflow stages can use different models without changing runtime code or BMAD workflow files.
 
 **Acceptance Criteria:**
 
 **Given** the scaffold includes agent definition files
 **When** the builder opens each file
 **Then** the agent identifier, role label, and model assignment are readable
-**And** file names use canonical lowercase kebab-case.
+**And** file names use canonical lowercase kebab-case
+**And** files live under `.pi/agents/` as the framework-owned project-agent source.
+
+**Given** the project contains BMAD workflow skills under `.pi/skills/`
+**When** `pi-subagents` discovers dispatchable project agents
+**Then** workflow skill files are not exposed as sub-agents solely because they contain `SKILL.md` frontmatter
+**And** any BMAD workflow role that must be dispatchable is represented by an explicit wrapper agent under `.pi/agents/`.
+
+**Given** the project still contains a legacy `.agents/` tree
+**When** `pi-subagents` discovers project agents for this scaffold
+**Then** `.pi/agents/` is the canonical source for framework-owned project agents
+**And** legacy `.agents/` content does not override or shadow `.pi/agents/` definitions.
 
 **Given** `pi-subagents` prepares to dispatch an agent
 **When** it resolves the agent definition
 **Then** it uses the model assignment from the target agent file or configured agent override
 **And** it does not require custom runtime source code for each model assignment.
+
+**Given** `.pi/settings.json` defines `subagents.agentOverrides.<agent-id>.model` for a project-defined agent
+**When** `pi-subagents` resolves that target agent
+**Then** the configured override is applied to project agents as well as built-in agents
+**And** the effective model is resolved without editing `.pi/skills/` workflow files.
+
+**Given** both an agent file model and a configured agent override are present
+**When** `pi-subagents` resolves the effective model
+**Then** the configured override takes precedence over the agent file model
+**And** project settings take precedence over user settings.
 
 **Given** two sub-agents are assigned different models
 **When** both are dispatched in the same team run
