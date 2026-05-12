@@ -7,7 +7,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 ## RULES
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
-- When `{spec_file}` is set, always write findings to the story file before offering action choices.
+- When `{spec_file}` is set, always write findings to the story file before offering action choices. Only `{deferred_work_file}` remains global; story-specific review findings/artifacts must stay beside `{spec_file}` in that story folder.
 - `decision-needed` findings must be resolved before handling `patch` findings.
 - Every persisted or presented finding MUST include severity: `[High]`, `[Medium]`, or `[Low]`.
 - Next action is severity-aware: unresolved blocking `High` and blocking `Medium` findings require fix or human decision; `Low` findings are deferred by default and do not block story completion.

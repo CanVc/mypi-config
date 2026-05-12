@@ -115,8 +115,8 @@ Amelia (Developer): "I'm having trouble detecting the completed epic from {sprin
 <check if="{{epic_number}} still not determined">
   <action>PRIORITY 3: Fallback to stories folder</action>
 
-<action>Scan {implementation_artifacts} for highest numbered story files</action>
-<action>Extract epic numbers from story filenames (pattern: epic-X-Y-story-name.md)</action>
+<action>Scan {implementation_artifacts} recursively for highest numbered story files, preferring canonical `{implementation_artifacts}/<story-key>/<story-key>.md` files and falling back to legacy flat `{implementation_artifacts}/<story-key>.md` files</action>
+<action>Extract epic numbers from story filenames (pattern: X-Y-story-name.md); ignore story-scoped review artifacts such as `review-*.md`</action>
 <action>Set {{detected_epic}} = highest epic number found</action>
 
   <output>
@@ -205,7 +205,7 @@ Amelia (Developer): "Before we start the team discussion, let me review all the 
 Charlie (Senior Dev): "Good idea - those dev notes always have gold in them."
 </output>
 
-<action>For each story in epic {{epic_number}}, read the complete story file from {implementation_artifacts}/{{epic_number}}-{{story_num}}-*.md</action>
+<action>For each story in epic {{epic_number}}, resolve {{story_key}} from sprint-status or filename, then read the complete story file from `{implementation_artifacts}/{{story_key}}/{{story_key}}.md` first; if absent, fall back to legacy `{implementation_artifacts}/{{story_key}}.md`</action>
 
 <action>Extract and analyze from each story:</action>
 

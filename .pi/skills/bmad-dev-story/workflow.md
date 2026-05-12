@@ -52,7 +52,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
   <step n="1" goal="Find next ready story and load it" tag="sprint-status">
     <check if="{{story_path}} is provided">
-      <action>Use {{story_path}} directly</action>
+      <action>Preserve explicit story_path support: use {{story_path}} directly without rewriting it into the story-folder convention</action>
       <action>Read COMPLETE story file</action>
       <action>Extract story_key from filename or metadata</action>
       <goto anchor="task_check" />
@@ -116,9 +116,11 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
     <!-- Non-sprint story discovery -->
     <check if="{{sprint_status}} file does NOT exist">
-      <action>Search {implementation_artifacts} for stories directly</action>
+      <action>Search {implementation_artifacts} recursively for stories directly</action>
       <action>Find stories with "ready-for-dev" status in files</action>
-      <action>Look for story files matching pattern: *-*-*.md</action>
+      <action>Look for canonical story files matching pattern: `{implementation_artifacts}/<story-key>/<story-key>.md`</action>
+      <action>Also look for legacy flat story files matching pattern: `{implementation_artifacts}/<story-key>.md` for backward compatibility only</action>
+      <action>Ignore story-scoped review artifacts such as `review-*.md` while discovering story files</action>
       <action>Read each candidate story file to check Status section</action>
 
       <check if="no ready-for-dev stories found in story files">
@@ -152,8 +154,9 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     </check>
 
     <action>Store the found story_key (e.g., "1-2-user-authentication") for later status updates</action>
-    <action>Find matching story file in {implementation_artifacts} using story_key pattern: {{story_key}}.md</action>
-    <action>Read COMPLETE story file from discovered path</action>
+    <action>Resolve the matching story file by checking `{implementation_artifacts}/{{story_key}}/{{story_key}}.md` first</action>
+    <action>Fall back to legacy flat story file `{implementation_artifacts}/{{story_key}}.md` only if the canonical story-folder file does not exist</action>
+    <action>Read COMPLETE story file from the resolved path and keep that selected path for all later story-file status and checkbox updates</action>
 
     <anchor id="task_check" />
 

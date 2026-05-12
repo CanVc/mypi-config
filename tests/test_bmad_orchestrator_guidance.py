@@ -3,7 +3,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GUIDANCE = ROOT / ".pi" / "skills" / "bmad-orchestrator" / "SKILL.md"
-STORY = ROOT / "docs" / "_bmad-output" / "implementation-artifacts" / "1-1-implement-the-generic-sub-agent-dispatch-tool.md"
+STORY_KEY = "1-1-implement-the-generic-sub-agent-dispatch-tool"
+IMPLEMENTATION_ARTIFACTS = ROOT / "docs" / "_bmad-output" / "implementation-artifacts"
+STORY = IMPLEMENTATION_ARTIFACTS / STORY_KEY / f"{STORY_KEY}.md"
 GITIGNORE = ROOT / ".gitignore"
 
 

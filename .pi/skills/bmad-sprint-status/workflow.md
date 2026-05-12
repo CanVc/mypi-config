@@ -68,6 +68,7 @@ Run `/bmad:bmm:workflows:sprint-planning` to generate it, then rerun sprint-stat
 <step n="2" goal="Read and parse sprint-status.yaml">
   <action>Read the FULL file: {sprint_status_file}</action>
   <action>Parse fields: generated, last_updated, project, project_key, tracking_system, story_location</action>
+  <action>Interpret story_location as the implementation artifact root that contains per-story folders (`<story-key>/<story-key>.md`), with legacy flat story files supported only as read fallback by story-facing workflows</action>
   <action>Parse development_status map. Classify keys:</action>
   - Epics: keys starting with "epic-" (and not ending with "-retrospective")
   - Retrospectives: keys ending with "-retrospective"
@@ -227,6 +228,7 @@ If the command targets a story, set `story_key={{next_story_id}}` when prompted.
 <action>Read and parse {sprint_status_file}</action>
 
 <action>Validate required metadata fields exist: generated, project, project_key, tracking_system, story_location (last_updated is optional for backward compatibility)</action>
+<action>Verify story_location is the implementation artifact root that contains per-story folders, not a claim that story markdown is written flat at the root</action>
 <check if="any required field missing">
 <template-output>is_valid = false</template-output>
 <template-output>error = "Missing required field(s): {{missing_fields}}"</template-output>

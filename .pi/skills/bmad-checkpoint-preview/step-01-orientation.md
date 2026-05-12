@@ -18,8 +18,8 @@ The conversation context before this skill was triggered IS your starting point 
 
 3. **Sprint tracking**
    Check for a sprint status file (`*sprint-status*`) in `{implementation_artifacts}` or `{planning_artifacts}`. If found, scan for stories with status `review`:
-   - Exactly one → suggest it and confirm with the user.
-   - Multiple → present as numbered options.
+   - Exactly one → suggest it and confirm with the user; if selected, resolve the selected story to `{implementation_artifacts}/{story_key}/{story_key}.md` first, with legacy `{implementation_artifacts}/{story_key}.md` fallback.
+   - Multiple → present as numbered options; when one is selected, resolve the selected story to `{implementation_artifacts}/{story_key}/{story_key}.md` first, with legacy flat fallback.
    - None → fall through.
 
 4. **Current git state**
@@ -40,7 +40,7 @@ Never ask extra questions beyond what the cascade prescribes. If a step above al
 Once a change is identified from any source above, fill in the complementary artifact:
 
 - If you have a spec, look for `baseline_commit` in its frontmatter to determine the diff baseline.
-- If you have a commit or branch, check `{implementation_artifacts}` for a spec whose `baseline_commit` is an ancestor of that commit/branch (i.e., the spec describes work done on top of that baseline).
+- If you have a commit or branch, check `{implementation_artifacts}` recursively for a spec or story whose `baseline_commit` is an ancestor of that commit/branch (i.e., the spec/story describes work done on top of that baseline). Include folder-based BMAD story files and legacy flat files; ignore story-scoped review artifacts.
 - If you found both a spec and a commit/branch, use both.
 
 ## DETERMINE WHAT YOU HAVE

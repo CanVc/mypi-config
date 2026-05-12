@@ -6,7 +6,7 @@
 # project: {project_name}
 # project_key: {project_key}
 # tracking_system: {tracking_system}
-# story_location: {story_location}
+# story_location: {story_location} # story_location points to the implementation artifact root that contains per-story folders
 
 # STATUS DEFINITIONS:
 # ==================
@@ -17,7 +17,7 @@
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created, ready for development
+#   - ready-for-dev: Story file created in its story artifact folder, ready for development
 #   - in-progress: Developer actively working on implementation
 #   - review: Implementation complete, ready for review
 #   - done: Story completed
@@ -39,6 +39,7 @@ last_updated: 05-06-2-2025 21:30
 project: My Awesome Project
 project_key: NOKEY
 tracking_system: file-system
+# story_location is the root containing <story-key>/<story-key>.md folders; legacy flat files are read fallback only.
 story_location: "{story_location}"
 
 development_status:

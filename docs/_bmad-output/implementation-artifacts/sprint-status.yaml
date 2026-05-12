@@ -1,9 +1,9 @@
 # generated: 2026-05-11
-# last_updated: 2026-05-12
+# last_updated: 2026-05-13
 # project: mypi-config
 # project_key: NOKEY
 # tracking_system: file-system
-# story_location: docs/_bmad-output/implementation-artifacts
+# story_location: docs/_bmad-output/implementation-artifacts # implementation artifact root containing per-story folders
 
 # STATUS DEFINITIONS:
 # ==================
@@ -18,7 +18,7 @@
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created in stories folder
+#   - ready-for-dev: Story file created in its story artifact folder
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
@@ -40,16 +40,18 @@
 # - Do not start Epic 3 review-dependent workflow proof until Epic 1 runtime and Epic 2 bootstrap proof are complete.
 
 generated: 2026-05-11
-last_updated: 2026-05-12
+last_updated: 2026-05-13
 project: mypi-config
 project_key: NOKEY
 tracking_system: file-system
+# story_location is the root containing <story-key>/<story-key>.md folders; legacy flat files are read fallback only.
 story_location: docs/_bmad-output/implementation-artifacts
 
 development_status:
   epic-1: in-progress
   1-1-implement-the-generic-sub-agent-dispatch-tool: done
   1-2-add-agent-definitions-and-model-routing-contract: done
+  1-2-1-normalize-story-scoped-implementation-artifacts: done
   1-3-enforce-fresh-context-session-policy: backlog
   1-4-add-orchestrator-task-routing-and-task-list-state: backlog
   1-5-add-pi-ui-visibility-for-agent-activity: backlog

@@ -393,6 +393,57 @@ So that different workflow stages can use different models without changing runt
 **Then** dispatch is blocked or reported as invalid for that agent
 **And** the error names the invalid agent configuration and required fix.
 
+### Story 1.2.1: Normalize Story-Scoped Implementation Artifacts
+
+As a builder,
+I want every BMAD story workflow to read and write story-specific artifacts inside that story's own implementation artifact folder,
+So that `/create-story`, `/dev-story`, `/code-review`, and related story-facing workflows keep `docs/_bmad-output/implementation-artifacts` clean and route story/review artifacts deterministically.
+
+**Acceptance Criteria:**
+
+**Given** active BMAD workflow skills may contain flat `{implementation_artifacts}` story path assumptions
+**When** this story is implemented
+**Then** the implementation includes an inventory of every active `.pi/skills` workflow file that reads, writes, discovers, or updates BMAD story files under `{implementation_artifacts}`
+**And** each inventoried file is classified as updated, intentionally unchanged, or out of scope with rationale.
+
+**Given** `/create-story` creates a new story
+**When** it saves the story artifact
+**Then** it writes the story file under a per-story folder using the active v1 convention `{implementation_artifacts}/{story_key}/{story_key}.md`
+**And** it does not write story markdown directly at `{implementation_artifacts}/{story_key}.md`.
+
+**Given** `/create-story` needs previous-story intelligence
+**When** it scans prior implementation artifacts
+**Then** it can find both existing folder-based story files and legacy flat story files without missing previous story learnings.
+
+**Given** `/dev-story` auto-discovers the next ready story from `sprint-status.yaml`
+**When** the matching story key is selected
+**Then** it resolves the story file inside the story folder first
+**And** it falls back to legacy flat files only for backward compatibility.
+
+**Given** `/code-review` is run for a story or spec file
+**When** review prompts, findings, reviewer outputs, or follow-up artifacts are persisted
+**Then** story-specific review artifacts are written under that story's artifact folder
+**And** global artifacts such as `sprint-status.yaml` and `deferred-work.md` may remain at the implementation-artifacts root.
+
+**Given** `sprint-planning` or `sprint-status` reports story locations
+**When** it generates or validates `sprint-status.yaml`
+**Then** its comments, `story_location`, detection rules, and examples reflect the story-folder convention
+**And** they do not imply that story files live flat at the implementation-artifacts root.
+
+**Given** related BMAD workflows inspect completed or in-progress stories
+**When** they scan `{implementation_artifacts}`
+**Then** workflows such as retrospective and checkpoint preview can locate story files in story folders
+**And** they do not regress on legacy flat files.
+
+**Given** existing artifacts already include story folders for Story 1.1 and Story 1.2
+**When** this story is complete
+**Then** the new convention preserves those artifacts
+**And** no new review files for the current story cycle are left directly under `docs/_bmad-output/implementation-artifacts`.
+
+**Given** this is an urgent Epic 1 hardening story
+**When** implementation completes
+**Then** tests or validation scripts prove the updated path resolution for create-story, dev-story, code-review, sprint-planning/status, and at least one backward-compatibility case.
+
 ### Story 1.3: Enforce Fresh-Context Session Policy
 
 As a builder,

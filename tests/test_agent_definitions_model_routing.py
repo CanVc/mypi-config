@@ -53,7 +53,7 @@ EXPECTED_AGENTS = {
     "reviewer-a": {
         "file": "reviewer-a.md",
         "roleLabel": "BMAD Reviewer A",
-        "model": "openai-codex/gpt-5.1",
+        "model": "openai-codex/gpt-5.4",
         "tools": ["read", "grep", "find", "ls", "bash"],
         "systemPromptMode": "replace",
         "inheritProjectContext": True,

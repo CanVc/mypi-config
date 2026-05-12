@@ -23,7 +23,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 - `tracking_system` = `file-system`
 - `project_key` = `NOKEY`
-- `story_location` = `{implementation_artifacts}`
+- `story_location` = `{implementation_artifacts}` (implementation artifact root containing per-story folders)
 - `story_location_absolute` = `{implementation_artifacts}`
 - `epics_location` = `{planning_artifacts}`
 - `epics_pattern` = `*epic*.md`
@@ -108,8 +108,10 @@ development_status:
 
 **Story file detection:**
 
-- Check: `{story_location_absolute}/{story-key}.md` (e.g., `stories/1-1-user-authentication.md`)
-- If exists → upgrade status to at least `ready-for-dev`
+- Check canonical folder path first: `{story_location_absolute}/{story-key}/{story-key}.md`
+- If canonical file exists → upgrade status to at least `ready-for-dev`
+- If canonical file is missing, check legacy flat path: `{story_location_absolute}/{story-key}.md` for backward compatibility only
+- Do not treat root-level `review-*.md` files as story files
 
 **Preservation rule:**
 
@@ -134,7 +136,7 @@ development_status:
 # project: {project_name}
 # project_key: {project_key}
 # tracking_system: {tracking_system}
-# story_location: {story_location}
+# story_location: {story_location} # implementation artifact root containing per-story folders
 
 # STATUS DEFINITIONS:
 # ==================
@@ -149,7 +151,7 @@ development_status:
 #
 # Story Status:
 #   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created in stories folder
+#   - ready-for-dev: Story file created in its story artifact folder
 #   - in-progress: Developer actively working on implementation
 #   - review: Ready for code review (via Dev's code-review workflow)
 #   - done: Story completed
@@ -240,7 +242,7 @@ backlog → ready-for-dev → in-progress → review → done
 ```
 
 - **backlog**: Story only exists in epic file
-- **ready-for-dev**: Story file created (e.g., `stories/1-3-plant-naming.md`)
+- **ready-for-dev**: Story file created in a per-story folder (e.g., `{implementation_artifacts}/1-3-plant-naming/1-3-plant-naming.md`)
 - **in-progress**: Developer actively working
 - **review**: Ready for code review (via Dev's code-review workflow)
 - **done**: Completed
