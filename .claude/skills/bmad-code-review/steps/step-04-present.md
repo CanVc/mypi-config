@@ -9,7 +9,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - When `{spec_file}` is set, always write findings to the story file before offering action choices.
 - `decision-needed` findings must be resolved before handling `patch` findings.
-- Every persisted or presented finding MUST include severity: `[High]`, `[Medium]`, or `[Low]`.
+- Every persisted or presented finding MUST include uppercase severity: `[HIGH]`, `[MEDIUM]`, or `[LOW]`.
 - Next action is severity-aware: unresolved blocking `High` and blocking `Medium` findings require fix or human decision; `Low` findings are deferred by default and do not block story completion.
 
 ## INSTRUCTIONS
@@ -20,18 +20,35 @@ If zero findings remain after triage (all dismissed or none raised): state that 
 
 ### 2. Write findings to the story file
 
-If `{spec_file}` exists and contains a Tasks/Subtasks section, append a `### Review Findings` subsection. Write all findings in this order:
+If `{spec_file}` exists and contains a Tasks/Subtasks section, write review findings into the story file using the Senior Developer Review action-item syntax:
 
-1. **`decision-needed`** findings (unchecked):
-   `- [ ] [Review][Decision][<Severity>] <Title> — <Detail>`
+1. Ensure a `## Senior Developer Review (AI)` section exists, with a `### Action Items` subsection. Append findings there; do not use a separate `### Review Findings` subsection for BMAD story reviews.
 
-2. **blocking `patch`** findings (unchecked):
-   `- [ ] [Review][Patch][<Severity>] <Title> [<file>:<line>]`
+2. Determine the review pass tag for this run:
+   - Use `[R1]` for the first review pass on a story.
+   - If the story already contains Senior Developer Review action items with `[R<number>]` tags, use the next number for newly appended findings (for example, existing `[R1]` items means this run writes `[R2]`).
+   - Reuse the same `[R<number>]` tag for every finding from the same review run.
+   - Do **not** write prose such as "Second-pass review" or "Second pass review" in the action-item text; the `[R<number>]` tag is the only pass marker.
 
-3. **`defer`** findings and non-blocking `Low` findings (checked off, marked deferred):
-   `- [x] [Review][Defer][<Severity>] <Title> [<file>:<line>] — deferred, <reason>`
+3. Normalize action-item metadata:
+   - Severity MUST be uppercase: `[HIGH]`, `[MEDIUM]`, or `[LOW]`.
+   - AC metadata MUST be bracketed after severity, using the finding's AC/constraint references when available (for example `[AC3, AC7]`) or `[N/A]` when no AC applies.
 
-Also append each `defer` finding and each non-blocking `Low` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with severity, description, and defer reason.
+4. Write all `### Action Items` findings in this order:
+
+   - **`decision-needed`** findings (unchecked):
+     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>] <Title> — decision needed: <Detail>`
+
+   - **blocking `patch`** findings (unchecked):
+     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>] <Title> [<file>:<line>]`
+
+   - **`defer`** findings and non-blocking `Low` findings (checked off, marked deferred):
+     `- [x] [R<number>][<SEVERITY>][<AC refs or N/A>] <Title> [<file>:<line>] — deferred, <reason>`
+
+5. For every unchecked `decision-needed` or blocking `patch` item, also add a matching unchecked task under `Tasks/Subtasks → ### Review Follow-ups (AI)` so `bmad-dev-story` can resume the work. Keep the dev follow-up marker first, then reuse the same review metadata:
+   `- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>] <Title/action>`
+
+Also append each `defer` finding and each non-blocking `Low` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with uppercase severity, description, and defer reason.
 
 ### 3. Present summary
 
@@ -39,7 +56,7 @@ Announce what was written:
 
 > **Code review complete.** <D> `decision-needed`, <P> blocking `patch`, <W> `defer`, <R> dismissed as noise. Severity: <H> High, <M> Medium, <L> Low.
 
-If `{spec_file}` is set, add: `Findings written to the review findings section in {spec_file}.`
+If `{spec_file}` is set, add: `Findings written to Senior Developer Review (AI) action items in {spec_file}.`
 Otherwise add: `Findings are listed above. No story file was provided, so nothing was persisted.`
 
 ### 4. Resolve decision-needed findings

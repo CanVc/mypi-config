@@ -33,11 +33,22 @@ class BmadCodeReviewSeverityTests(unittest.TestCase):
         for steps_dir in CODE_REVIEW_ROOTS:
             with self.subTest(steps_dir=steps_dir):
                 text = (steps_dir / "step-04-present.md").read_text(encoding="utf-8")
-                self.assertIn("Every persisted or presented finding MUST include severity", text)
-                self.assertIn("[Review][Patch][<Severity>]", text)
-                self.assertIn("[Review][Defer][<Severity>]", text)
+                self.assertIn("Every persisted or presented finding MUST include uppercase severity", text)
+                self.assertIn("[HIGH]`, `[MEDIUM]`, or `[LOW]", text)
                 self.assertIn("Never keep a story blocked only because `Low` findings exist", text)
                 self.assertIn("recommended when no blocking High/Medium findings remain", text)
+
+    def test_present_step_uses_review_pass_tags_for_senior_dev_action_items(self):
+        for steps_dir in CODE_REVIEW_ROOTS:
+            with self.subTest(steps_dir=steps_dir):
+                text = (steps_dir / "step-04-present.md").read_text(encoding="utf-8")
+                self.assertIn("Senior Developer Review action-item syntax", text)
+                self.assertIn("`## Senior Developer Review (AI)`", text)
+                self.assertIn("`### Action Items`", text)
+                self.assertIn("Use `[R1]` for the first review pass", text)
+                self.assertIn("`- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>] <Title> [<file>:<line>]`", text)
+                self.assertIn("Do **not** write prose such as \"Second-pass review\"", text)
+                self.assertIn("`- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>] <Title/action>`", text)
 
     def test_orchestrator_selects_next_action_from_review_severity(self):
         text = ORCHESTRATOR.read_text(encoding="utf-8")
