@@ -31,6 +31,37 @@ This skill is parent-session guidance. It is not a child sub-agent definition an
 - Child agents must not attempt nested orchestration or launch their own sub-agents.
 - Do not model `bmad-orchestrator` as a child agent; it is guidance for the active parent session.
 
+## Session Policy
+
+Active v1 BMAD session policy is fail-closed and artifact-first:
+
+- All formal BMAD dispatches MUST pass `context: "fresh"` explicitly. For formal BMAD dispatches, omitted context is forbidden because `pi-subagents` may apply an agent `defaultContext: "fork"` to the whole run when any requested agent has that default.
+- Active v1 allowed reuse/resume exception set: none. Standard BMAD story, implementation, review, validation, and final-review paths do not have an approved reuse case.
+- Future TDD red/green repair exceptions are future scope only. Do not assume or implement v2 repair/resume behavior in v1 story or review flows.
+- `context: "fork"` is unsafe for BMAD formal dispatches because it can branch from the parent persisted session and include hidden runtime history. Reject it before dispatch rather than treating it as equivalent to fresh.
+- `subagent({ action: "resume", ... })` is session reuse for BMAD policy purposes. Standard BMAD story/review workflows MUST block it unless an active workflow explicitly documents and tests a policy-approved repair case; v1 has no such case.
+- Always-fresh roles have no exception: `reviewer-a`, `reviewer-b`, active `bmad-code-review` review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor), validators, final reviewers, and final-review retry loops. A requested `fork` or `resume` for these roles MUST be blocked with a policy error.
+- Apply this policy before every single-agent `agent` dispatch, top-level parallel `tasks` dispatch, `chain` dispatch, and parallel-chain dispatch. If any member of a parallel or chain request violates policy, fail closed before any child launch.
+- On policy rejection, stop execution safely before any Markdown artifact state transition. Do not mark story/review state, task checkboxes, sprint state, or review outcomes after a rejected session request.
+- Policy rejection messages MUST identify `requestedAgent`, `requestedMode`, and `violatedPolicy`, and must state the requested context/resume mode and violated policy in human-readable text.
+
+Minimum rejection evidence shape:
+
+```yaml
+requestedAgent: "reviewer-a"
+requestedMode: "fork"
+violatedPolicy: "BMAD formal dispatches require explicit context: fresh; reviewer/final-review roles cannot fork or resume."
+nextAction: "HALT before dispatch and before artifact state transition"
+```
+
+Fresh-context construction for formal BMAD dispatches:
+
+- Send only the task text and explicitly named artifacts to the child.
+- No previous runtime transcript, parent conversation, child output history, reviewer transcript, or prior agent conversation history may be included; these materials must not be appended to formal child prompts.
+- Pass context as artifact paths/read directives plus concise role-specific task text, not lossy summaries reconstructed by the parent.
+- Continue verifying every required artifact path exists and is readable before dispatch.
+- Existing `inheritProjectContext: true` agent frontmatter may provide shared project rules, but story/review truth must come from explicit task text and named artifacts.
+
 ## Delegation Defaults
 
 Map BMAD delegation intent onto `pi-subagents` parameters as follows:
@@ -44,11 +75,37 @@ subagent({
 })
 ```
 
+Parallel task dispatches must also set top-level `context: "fresh"` explicitly:
+
+```ts
+subagent({
+  tasks: [
+    { agent: "reviewer-a", task: "Review <artifact-path> as source of truth." },
+    { agent: "reviewer-b", task: "Review <artifact-path> as source of truth." }
+  ],
+  context: "fresh",
+  agentScope: "project"
+})
+```
+
+Chain and parallel-chain dispatches must also set top-level `context: "fresh"` explicitly:
+
+```ts
+subagent({
+  chain: [
+    { agent: "worker", task: "Read <artifact-path> and implement the approved task." },
+    { agent: "reviewer-a", task: "Review <artifact-path> and the resulting diff." }
+  ],
+  context: "fresh",
+  agentScope: "project"
+})
+```
+
 - BMAD `sessionMode: fresh` maps to `context: "fresh"`.
-- Treat previous BMAD `sessionMode: resume` as out of scope unless explicitly using `pi-subagents` async `status`/`resume` behavior.
+- BMAD `sessionMode: resume`, omitted context, `context: "fork"`, and `action: "resume"` are not valid for active v1 standard BMAD dispatches.
 - Use `agentScope: "both"` only when user and project agents are intentionally trusted.
 - Use `agentScope: "project"` when delegation must be limited to project-local agents.
-- Prefer packaged builtin agents such as `scout`, `planner`, `worker`, `reviewer`, `oracle`, `researcher`, `context-builder`, and `delegate` until project-owned BMAD agents are defined.
+- Prefer project-owned agents (`implementer`, `reviewer-a`, `reviewer-b`) for formal BMAD story/review paths; use packaged builtin agents such as `scout`, `planner`, `worker`, `reviewer`, `oracle`, `researcher`, `context-builder`, and `delegate` only for informal or explicitly scoped work.
 
 ## Dispatch Evidence
 

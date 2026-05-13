@@ -8,11 +8,13 @@ specLoopIteration: 1
 ## RULES
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
-- Review subagents get NO conversation context.
+- Review subagents are always fresh under the centralized BMAD Session Policy: use explicit `context: "fresh"`, with no fork/resume.
 
 ## INSTRUCTIONS
 
-Change `{spec_file}` status to `in-review` in the frontmatter before continuing.
+Before changing `{spec_file}` status, validate the intended review dispatch against the centralized BMAD Session Policy. If any reviewer launch request omits context, requests `context: "fork"`, or requests `action: "resume"`, HALT before editing `{spec_file}` and report the requested reviewer role, requested mode, and violated policy.
+
+After session policy validation passes, change `{spec_file}` status to `in-review` in the frontmatter before continuing.
 
 ### Construct Diff
 
@@ -22,7 +24,7 @@ Do NOT `git add` anything — this is read-only inspection.
 
 ### Review
 
-Launch three subagents without conversation context. If no sub-agents are available, generate three review prompt files in `{implementation_artifacts}` — one per reviewer role below — and HALT. Ask the human to run each in a separate session (ideally a different LLM) and paste back the findings.
+Launch three subagents with explicit `context: "fresh"` and no fork/resume. Fresh review prompts must include only the review task and explicitly named diff/spec/context artifacts; do not append parent conversation history, prior child output, or reviewer transcripts. If no sub-agents are available, generate three review prompt files in `{implementation_artifacts}` — one per reviewer role below — and HALT. Ask the human to run each in a separate session (ideally a different LLM) and paste back the findings.
 
 - **Blind hunter** — receives `{diff_output}` only. No spec, no context docs, no project access. Invoke via the `bmad-review-adversarial-general` skill.
 - **Edge case hunter** — receives `{diff_output}` and read access to the project. Invoke via the `bmad-review-edge-case-hunter` skill.

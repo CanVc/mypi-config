@@ -17,7 +17,7 @@ Implement the clarified intent directly.
 
 ### Review
 
-Invoke the `bmad-review-adversarial-general` skill in a subagent with the changed files. The subagent gets NO conversation context — to avoid anchoring bias. If no sub-agents are available, write the changed files to a review prompt file in `{implementation_artifacts}` and HALT. Ask the human to run the review in a separate session and paste back the findings.
+Before invoking the review subagent, validate the launch against the centralized BMAD Session Policy. Invoke the `bmad-review-adversarial-general` skill in a subagent with explicit `context: "fresh"` and the changed files only; no fork/resume is allowed. Fresh review prompts must not append parent conversation history, prior child output, or reviewer transcripts. If a launch request omits context, requests `context: "fork"`, or requests `action: "resume"`, HALT before dispatch and report the requested reviewer role, requested mode, and violated policy. If no sub-agents are available, write the changed files to a review prompt file in `{implementation_artifacts}` and HALT. Ask the human to run the review in a separate session and paste back the findings.
 
 ### Classify
 

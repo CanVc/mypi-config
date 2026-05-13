@@ -8,12 +8,22 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - No intermediate approvals.
+- Quick-dev planning investigation sub-agent/task launches are formal BMAD dispatches and MUST follow the centralized BMAD Session Policy: validate before dispatch and before any `{spec_file}` artifact write, pass explicit `context: "fresh"`, and allow no fork/resume.
+- If a planning investigation launch request omits context, requests `context: "fork"`, or requests `action: "resume"`, HALT before dispatch and before writing `{spec_file}`. Report the requested investigation agent/task, requested mode, and violated policy.
+- Fresh planning investigation prompts are artifact-first: include only the task text and explicitly named artifact paths/read directives; they must not append parent conversation history, previous runtime transcript, child output history, or reviewer transcripts.
 
 ## INSTRUCTIONS
 
 1. Draft resume check. If `{spec_file}` exists with `status: draft`, read it and capture the verbatim `<frozen-after-approval>...</frozen-after-approval>` block as `preserved_intent`. Otherwise `preserved_intent` is empty.
-2. Investigate codebase. _Isolate deep exploration in sub-agents/tasks where available. To prevent context snowballing, instruct subagents to give you distilled summaries only._
-3. Read `./spec-template.md` fully. Fill it out based on the intent and investigation. If `{preserved_intent}` is non-empty, substitute it for the `<frozen-after-approval>` block in your filled spec before writing. Write the result to `{spec_file}`.
+
+### Session Policy Gate
+
+Before launching any investigation sub-agent/task or writing `{spec_file}`, decide whether planning investigation will be delegated to a sub-agent/task. If the intended investigation launch omits context, requests `context: "fork"`, or requests `action: "resume"`, HALT before dispatch and before writing `{spec_file}`. Report the requested investigation agent/task, requested mode, and violated policy.
+
+If delegation is used, the dispatch MUST include explicit `context: "fresh"` and no fork/resume. The fresh investigation prompt must include only the task text and explicitly named artifact paths/read directives needed for investigation; it must not append parent conversation history, previous runtime transcript, child output history, or reviewer transcripts. If no sub-agents/tasks are available, investigate directly after this gate.
+
+2. Investigate codebase. _Isolate deep exploration in sub-agents/tasks where available only after the Session Policy Gate passes. To prevent context snowballing, instruct subagents to give you distilled summaries only._
+3. Read `./spec-template.md` fully. Fill it out based on the intent and investigation. If `{preserved_intent}` is non-empty, substitute it for the `<frozen-after-approval>` block in your filled spec before writing. Write the result to `{spec_file}` only after the Session Policy Gate has passed.
 4. Self-review against READY FOR DEVELOPMENT standard.
 5. If intent gaps exist, do not fantasize, do not leave open questions, HALT and ask the human.
 6. Token count check (see SCOPE STANDARD). If spec exceeds 1600 tokens:
