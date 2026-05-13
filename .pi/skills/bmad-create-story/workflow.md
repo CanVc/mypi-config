@@ -34,8 +34,12 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 - `ux_file` = `{planning_artifacts}/*ux*.md`
 - `story_title` = "" (will be elicited if not derivable)
 - `project_context` = `**/project-context.md` (load if exists)
-- `story_artifact_dir` = `{implementation_artifacts}/{{story_key}}`
-- `default_output_file` = `{implementation_artifacts}/{{story_key}}/{{story_key}}.md`
+- `story_id_dash` = `{{epic_num}}-{{story_num}}` (short story id used as file prefix, e.g. `1-2`)
+- `story_artifact_dir` = `{implementation_artifacts}/{{story_key}}` where `story_key` is the full story slug, e.g. `1-2-un-exemple-de-story`
+- `default_output_file` = `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story.md`
+- `story_changelog_file` = `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story-changelog.md`
+- `orchestrator_log_file` = `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-orchestrator-log.md`
+- `cycle_state_file` = `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-cycle-state.md`
 
 ### Input Files
 
@@ -126,7 +130,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     <action>Store story_key for later use (e.g., "1-2-user-authentication")</action>
 
     <!-- Mark epic as in-progress if this is first story -->
-    <action>Check if this is the first story in epic {{epic_num}} by looking for canonical folder-based story files first (`{implementation_artifacts}/{{epic_num}}-1-*/{{epic_num}}-1-*.md`) and legacy flat story files second (`{implementation_artifacts}/{{epic_num}}-1-*.md`)</action>
+    <action>Check if this is the first story in epic {{epic_num}} by looking for canonical folder-based story files first (`{implementation_artifacts}/{{epic_num}}-1-*/{{epic_num}}-1-story.md`) and legacy folder/flat story files second (`{implementation_artifacts}/{{epic_num}}-1-*/*.md`, `{implementation_artifacts}/{{epic_num}}-1-*.md`)</action>
     <check if="this is first story in epic {{epic_num}}">
       <action>Load {{sprint_status}} and check epic-{{epic_num}} status</action>
       <action>If epic status is "backlog" → update to "in-progress"</action>
@@ -183,7 +187,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   <action>Store story_key for later use (e.g., "1-2-user-authentication")</action>
 
   <!-- Mark epic as in-progress if this is first story -->
-  <action>Check if this is the first story in epic {{epic_num}} by looking for canonical folder-based story files first (`{implementation_artifacts}/{{epic_num}}-1-*/{{epic_num}}-1-*.md`) and legacy flat story files second (`{implementation_artifacts}/{{epic_num}}-1-*.md`)</action>
+  <action>Check if this is the first story in epic {{epic_num}} by looking for canonical folder-based story files first (`{implementation_artifacts}/{{epic_num}}-1-*/{{epic_num}}-1-story.md`) and legacy folder/flat story files second (`{implementation_artifacts}/{{epic_num}}-1-*/*.md`, `{implementation_artifacts}/{{epic_num}}-1-*.md`)</action>
   <check if="this is first story in epic {{epic_num}}">
     <action>Load {{sprint_status}} and check epic-{{epic_num}} status</action>
     <action>If epic status is "backlog" → update to "in-progress"</action>
@@ -226,7 +230,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   (As a, I want, so that) - Detailed acceptance criteria (already BDD formatted) - Technical requirements specific to this story -
   Business context and value - Success criteria <!-- Previous story analysis for context continuity -->
   <check if="story_num > 1">
-    <action>Find {{previous_story_num}}: scan {implementation_artifacts} recursively for canonical folder-based story files first (`{implementation_artifacts}/<story-key>/<story-key>.md`) and legacy flat story files second (`{implementation_artifacts}/<story-key>.md`) in epic {{epic_num}} with the highest story number less than {{story_num}}</action>
+    <action>Find {{previous_story_num}}: scan {implementation_artifacts} recursively for canonical folder-based story files first (`{implementation_artifacts}/<story-key>/<story-id>-story.md`) and legacy folder/flat story files second (`{implementation_artifacts}/<story-key>/<story-key>.md`, `{implementation_artifacts}/<story-key>.md`) in epic {{epic_num}} with the highest story number less than {{story_num}}</action>
     <action>Load the resolved previous story file from the canonical folder path when present; otherwise load the legacy flat story file for backward compatibility</action> **PREVIOUS STORY INTELLIGENCE:** -
   Dev notes and learnings from previous story - Review feedback and corrections needed - Files that were created/modified and their
   patterns - Testing approaches that worked/didn't work - Problems encountered and solutions found - Code patterns established <action>Extract
@@ -295,6 +299,8 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   <critical>📝 CREATE ULTIMATE STORY FILE - The developer's master implementation guide!</critical>
 
   <action>Ensure the story artifact directory exists: {story_artifact_dir}</action>
+  <action>Create story-scoped artifact subdirectories if missing: `{story_artifact_dir}/reviews`, `{story_artifact_dir}/remediation`, `{story_artifact_dir}/validation`, and `{story_artifact_dir}/{{story_id_dash}}-runtime-proof`</action>
+  <action>Create initial sidecar artifacts if missing: `{story_changelog_file}`, `{orchestrator_log_file}`, and `{cycle_state_file}` using the canonical Markdown formats in `.pi/references/artifact-format.md`</action>
   <action>Initialize from template.md:
   {default_output_file}</action>
   <template-output file="{default_output_file}">story_header</template-output>
@@ -348,6 +354,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 <step n="6" goal="Update sprint status and finalize">
   <action>Validate the newly created story file {default_output_file} against `./checklist.md` and apply any required fixes before finalizing</action>
   <action>Verify no story markdown was written directly to `{implementation_artifacts}/{{story_key}}.md`; that legacy path is read-only fallback compatibility, not a new output location</action>
+  <action>Verify the canonical story file is named `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story.md`, not `{implementation_artifacts}/{{story_key}}/{{story_key}}.md`</action>
   <action>Save story document unconditionally</action>
 
   <!-- Update sprint status -->

@@ -195,7 +195,7 @@ class OrchestratorTaskRoutingStateGuidanceTests(unittest.TestCase):
         for filename in ["orchestrator.md", "bmad-orchestrator.md"]:
             with self.subTest(filename=filename):
                 self.assertFalse((AGENTS_DIR / filename).exists())
-        for filename in ["implementer.md", "reviewer-a.md", "reviewer-b.md"]:
+        for filename in ["implementer.md", "reviewer-a.md", "reviewer-b.md", "findings-triager.md"]:
             frontmatter = read(AGENTS_DIR / filename).split("---", 2)[1]
             with self.subTest(filename=filename):
                 self.assertNotRegex(frontmatter, r"tools:.*\bsubagent\b")

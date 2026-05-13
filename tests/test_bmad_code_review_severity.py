@@ -46,9 +46,10 @@ class BmadCodeReviewSeverityTests(unittest.TestCase):
                 self.assertIn("`## Senior Developer Review (AI)`", text)
                 self.assertIn("`### Action Items`", text)
                 self.assertIn("Use `[R1]` for the first review pass", text)
-                self.assertIn("`- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>] <Title> [<file>:<line>]`", text)
+                self.assertIn("[F-R<number>-001] <Title> [<file>:<line>]", text)
+                self.assertIn("Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001`", text)
                 self.assertIn("Do **not** write prose such as \"Second-pass review\"", text)
-                self.assertIn("`- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>] <Title/action>`", text)
+                self.assertIn("`- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title/action>", text)
 
     def test_orchestrator_selects_next_action_from_review_severity(self):
         text = ORCHESTRATOR.read_text(encoding="utf-8")

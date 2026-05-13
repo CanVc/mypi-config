@@ -3,6 +3,8 @@ diff_output: '' # set at runtime
 spec_file: '' # set at runtime (path or empty)
 review_mode: '' # set at runtime: "full" or "no-spec"
 story_key: '' # set at runtime when discovered from sprint status
+review_artifact_dir: '' # set at runtime; story folder when a story/spec is known
+story_id_dash: '' # set at runtime for BMAD story files, e.g. 1-2
 ---
 
 # Step 1: Gather Context
@@ -35,8 +37,8 @@ story_key: '' # set at runtime when discovered from sprint status
 
    **Tier 3 — Sprint tracking.**
    Look for a sprint status file (`*sprint-status*`) in `{implementation_artifacts}` or `{planning_artifacts}`. If found, scan for stories with status `review`:
-   - **Exactly one `review` story:** Set `{story_key}` to the story's key (e.g., `1-2-user-auth`). Suggest it: "I found story <story-id> in `review` status. Would you like to review its changes? [Y] Yes / [N] No, let me choose". If confirmed, use the story context to determine the diff source (branch name derived from story slug, or uncommitted changes). If declined, clear `{story_key}` and fall through.
-   - **Multiple `review` stories:** Present them as numbered options alongside a manual choice option. Wait for user selection. If a story is selected, set `{story_key}` and use its context to determine the diff source. If manual choice is selected, clear `{story_key}` and fall through.
+   - **Exactly one `review` story:** Set `{story_key}` to the story's key (e.g., `1-2-user-auth`). Derive `{story_id_dash}` from the first two dash-separated tokens of `{story_key}`. Resolve `{spec_file}` by first checking canonical `{implementation_artifacts}/{story_key}/{story_id_dash}-story.md`, then legacy folder `{implementation_artifacts}/{story_key}/{story_key}.md`, then legacy flat `{implementation_artifacts}/{story_key}.md` only for backward compatibility. Set `{review_artifact_dir}` to `{implementation_artifacts}/{story_key}` whenever `{story_key}` is known, even if `{spec_file}` resolved through a legacy fallback. Suggest it: "I found story <story-id> in `review` status. Would you like to review its changes? [Y] Yes / [N] No, let me choose". If confirmed, use the story context to determine the diff source (branch name derived from story slug, or uncommitted changes). If declined, clear `{story_key}`, `{spec_file}`, and `{review_artifact_dir}` and fall through.
+   - **Multiple `review` stories:** Present them as numbered options alongside a manual choice option. Wait for user selection. If a story is selected, set `{story_key}`, derive `{story_id_dash}` from the first two dash-separated tokens of `{story_key}`, resolve `{spec_file}` by first checking canonical `{implementation_artifacts}/{story_key}/{story_id_dash}-story.md`, then legacy folder `{implementation_artifacts}/{story_key}/{story_key}.md`, then legacy flat `{implementation_artifacts}/{story_key}.md`, set `{review_artifact_dir}` to `{implementation_artifacts}/{story_key}` whenever `{story_key}` is known, and use its context to determine the diff source. If manual choice is selected, clear `{story_key}` and fall through.
    - **None:** Fall through.
 
    **Tier 4 — Current git state.**
@@ -48,7 +50,7 @@ story_key: '' # set at runtime when discovered from sprint status
    Never ask extra questions beyond what the cascade prescribes. If a tier above already identified the target, skip the remaining tiers and proceed to instruction 3 (construct diff).
 
 2. HALT. Ask the user: **What do you want to review?** Present these options:
-   - **Uncommitted changes** (staged + unstaged)
+   - **Uncommitted changes** (staged + unstaged + untracked)
    - **Staged changes only**
    - **Branch diff** vs a base branch (ask which base branch)
    - **Specific commit range** (ask for the range)
@@ -56,7 +58,7 @@ story_key: '' # set at runtime when discovered from sprint status
 
 3. Construct `{diff_output}` from the chosen source.
    - For **staged changes only**: run `git diff --cached`.
-   - For **uncommitted changes** (staged + unstaged): run `git diff HEAD`.
+   - For **uncommitted changes** (staged + unstaged + untracked): construct a tracked and untracked review delta. Run `git diff HEAD` for tracked changes, then run `git ls-files --others --exclude-standard` and append each untracked file with `git diff --no-index /dev/null <path>` so new tests, story-scoped artifacts, and generated review/dev reports are visible to reviewers. Do not rely on bare `git diff HEAD` as the full review delta when untracked files exist.
    - For **branch diff**: verify the base branch exists before running `git diff`. If it does not exist, HALT and ask the user for a valid branch.
    - For **commit range**: verify the range resolves. If it does not, HALT and ask the user for a valid range.
    - For **provided diff**: validate the content is non-empty and parseable as a unified diff. If it is not parseable, HALT and ask the user to provide a valid diff.
@@ -64,10 +66,10 @@ story_key: '' # set at runtime when discovered from sprint status
    - After constructing `{diff_output}`, verify it is non-empty regardless of source type. If empty, HALT and tell the user there is nothing to review.
 
 4. **Set the spec context.**
-   - If `{spec_file}` is already set (from Tier 1 or Tier 2): verify the file exists and is readable, then set `{review_mode}` = `"full"`.
+   - If `{spec_file}` is already set (from Tier 1 or Tier 2): verify the file exists and is readable, then set `{review_mode}` = `"full"`. If `{spec_file}` is a BMAD story file under `{implementation_artifacts}` matching canonical `{implementation_artifacts}/{story_key}/{story_id_dash}-story.md`, legacy folder `{implementation_artifacts}/{story_key}/{story_key}.md`, or legacy flat `{implementation_artifacts}/{story_key}.md`, derive `{story_key}` and `{story_id_dash}` from the path when not already set and set `{review_artifact_dir}` to `{implementation_artifacts}/{story_key}`. Otherwise, set `{review_artifact_dir}` to the directory containing `{spec_file}`.
    - Otherwise, ask the user: **Is there a spec or story file that provides context for these changes?**
-     - If yes: set `{spec_file}` to the path provided, verify the file exists and is readable, then set `{review_mode}` = `"full"`.
-     - If no: set `{review_mode}` = `"no-spec"`.
+     - If yes: set `{spec_file}` to the path provided, verify the file exists and is readable, then set `{review_mode}` = `"full"`. If `{spec_file}` is a BMAD story file under `{implementation_artifacts}` matching canonical `{implementation_artifacts}/{story_key}/{story_id_dash}-story.md`, legacy folder `{implementation_artifacts}/{story_key}/{story_key}.md`, or legacy flat `{implementation_artifacts}/{story_key}.md`, derive `{story_key}` and `{story_id_dash}` from the path when not already set and set `{review_artifact_dir}` to `{implementation_artifacts}/{story_key}`. Otherwise, set `{review_artifact_dir}` to the directory containing `{spec_file}`.
+     - If no: set `{review_mode}` = `"no-spec"`; set `{review_artifact_dir}` to `{implementation_artifacts}` because no story/spec folder is known.
 
 5. If `{review_mode}` = `"full"` and the file at `{spec_file}` has a `context` field in its frontmatter listing additional docs, load each referenced document. Warn the user about any docs that cannot be found.
 

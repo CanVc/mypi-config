@@ -36,6 +36,15 @@ so that {{benefit}}.
 
 - Cite all technical details with source paths and sections, e.g. [Source: docs/<file>.md#Section]
 
+## Story Artifacts
+
+- Changelog: `{{story_id_dash}}-story-changelog.md`
+- Orchestrator log: `{{story_id_dash}}-orchestrator-log.md`
+- Cycle state: `{{story_id_dash}}-cycle-state.md`
+- Reviews: `reviews/`
+- Validation: `validation/`
+- Runtime proof: `{{story_id_dash}}-runtime-proof/`
+
 ## Dev Agent Record
 
 ### Agent Model Used

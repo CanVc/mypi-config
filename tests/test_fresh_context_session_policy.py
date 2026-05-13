@@ -69,6 +69,7 @@ class FreshContextSessionPolicyGuidanceTests(unittest.TestCase):
         for phrase in [
             "`reviewer-a`",
             "`reviewer-b`",
+            "`findings-triager`",
             "Blind Hunter",
             "Edge Case Hunter",
             "Acceptance Auditor",
@@ -185,7 +186,7 @@ class FreshContextRoleBoundaryTests(unittest.TestCase):
                 self.assertFalse((AGENTS_DIR / filename).exists())
 
     def test_role_agents_do_not_receive_subagent_tool(self):
-        for filename in ["implementer.md", "reviewer-a.md", "reviewer-b.md"]:
+        for filename in ["implementer.md", "reviewer-a.md", "reviewer-b.md", "findings-triager.md"]:
             text = read(AGENTS_DIR / filename)
             frontmatter = text.split("---", 2)[1]
             with self.subTest(filename=filename):

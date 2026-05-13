@@ -576,7 +576,7 @@ Format:
 
 ### Action Items
 
-- [ ] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [x] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 ### 6.2 `Review Follow-ups (AI)`
@@ -594,7 +594,7 @@ Location:
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [x] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 ### 6.3 Required fields
@@ -762,77 +762,77 @@ This preserves BMAD story compatibility while making fresh-context handoffs boun
 
 ### Reference contracts
 
-- [ ] Create `.pi/references/artifact-format.md`.
-- [ ] Document canonical story folder naming: `<story_id>-<story-slug>/`.
-- [ ] Document canonical file naming: `<story_id>-story.md`, `<story_id>-story-changelog.md`, `<story_id>-orchestrator-log.md`, `<story_id>-cycle-state.md`.
-- [ ] Document canonical subfolders: `reviews/`, `remediation/`, `validation/`, `<story_id>-runtime-proof/`.
-- [ ] Document future TDD additions: `<story_id>-test-plan.md`, `<story_id>-batches/`.
-- [ ] Document required machine markers for `*-cycle-state.md`, including `<!-- bmad:cycle-state:start -->` and `<!-- bmad:cycle-state:end -->`.
-- [ ] Create or update `.pi/references/workflow-status-codes.md`.
-- [ ] Define closed task statuses: `pending`, `in-progress`, `completed`, `blocked`, `failed`.
-- [ ] Define closed finding statuses: `open`, `implemented`, `verified`, `deferred`, `dismissed`, `reopened`.
-- [ ] Define review classification codes: `implementation-issue`, `test-issue`, `spec-ambiguity`, `artifact-invalid`, `retry-limit-reached`, `environment-blocked`, `workflow-contract-violation`.
+- [x] Create `.pi/references/artifact-format.md`.
+- [x] Document canonical story folder naming: `<story_id>-<story-slug>/`.
+- [x] Document canonical file naming: `<story_id>-story.md`, `<story_id>-story-changelog.md`, `<story_id>-orchestrator-log.md`, `<story_id>-cycle-state.md`.
+- [x] Document canonical subfolders: `reviews/`, `remediation/`, `validation/`, `<story_id>-runtime-proof/`.
+- [x] Document future TDD additions: `<story_id>-test-plan.md`, `<story_id>-batches/`.
+- [x] Document required machine markers for `*-cycle-state.md`, including `<!-- bmad:cycle-state:start -->` and `<!-- bmad:cycle-state:end -->`.
+- [x] Create or update `.pi/references/workflow-status-codes.md`.
+- [x] Define closed task statuses: `pending`, `in-progress`, `completed`, `blocked`, `failed`.
+- [x] Define closed finding statuses: `open`, `implemented`, `verified`, `deferred`, `dismissed`, `reopened`.
+- [x] Define review classification codes: `implementation-issue`, `test-issue`, `spec-ambiguity`, `artifact-invalid`, `retry-limit-reached`, `environment-blocked`, `workflow-contract-violation`.
 
 ### Story creation and discovery
 
-- [ ] Update `bmad-create-story` to create one story folder per story using the full story slug.
-- [ ] Update `bmad-create-story` to name the canonical story file `<story_id>-story.md`.
-- [ ] Update story discovery in `bmad-dev-story`, `bmad-code-review`, and `bmad-dev-cycle` to prefer `<story_id>-story.md` inside the story folder.
-- [ ] Preserve backward-compatible discovery for existing legacy story files during migration.
-- [ ] Ensure generated stories include a `## Story Artifacts` section with links to story-scoped artifacts.
+- [x] Update `bmad-create-story` to create one story folder per story using the full story slug.
+- [x] Update `bmad-create-story` to name the canonical story file `<story_id>-story.md`.
+- [x] Update story discovery in `bmad-dev-story`, `bmad-code-review`, and `bmad-dev-cycle` to prefer `<story_id>-story.md` inside the story folder.
+- [x] Preserve backward-compatible discovery for existing legacy story files during migration.
+- [x] Ensure generated stories include a `## Story Artifacts` section with links to story-scoped artifacts.
 
 ### Dev story workflow
 
-- [ ] Update `/dev-story` to detect unchecked `[AI-Review]` items under `Tasks / Subtasks -> Review Follow-ups (AI)`.
-- [ ] Require every new unchecked `[AI-Review]` item to include `Source: \`reviews/<story_id>-Rn-findings.md#F-Rn-xxx\``.
-- [ ] Update `/dev-story` to read referenced `*-findings.md` files before implementing review follow-ups.
-- [ ] Update `/dev-story` to locate exact finding headings such as `### F-R2-001`.
-- [ ] Update `/dev-story` to use `Required Fix`, `Validation Requirements`, and `Out of Scope` from each finding.
-- [ ] Add fail-closed behavior for missing source links, missing files, missing finding anchors, or malformed finding records.
-- [ ] Preserve current checkbox behavior: after implementation, check both the `Review Follow-ups (AI)` item and the matching `Senior Developer Review (AI)` action item.
-- [ ] Route verbose validation output to `validation/` instead of bloating the story file.
-- [ ] Append compact execution history to `<story_id>-story-changelog.md` when needed.
+- [x] Update `/dev-story` to detect unchecked `[AI-Review]` items under `Tasks / Subtasks -> Review Follow-ups (AI)`.
+- [x] Require every new unchecked `[AI-Review]` item to include `Source: \`reviews/<story_id>-Rn-findings.md#F-Rn-xxx\``.
+- [x] Update `/dev-story` to read referenced `*-findings.md` files before implementing review follow-ups.
+- [x] Update `/dev-story` to locate exact finding headings such as `### F-R2-001`.
+- [x] Update `/dev-story` to use `Required Fix`, `Validation Requirements`, and `Out of Scope` from each finding.
+- [x] Add fail-closed behavior for missing source links, missing files, missing finding anchors, or malformed finding records.
+- [x] Preserve current checkbox behavior: after implementation, check both the `Review Follow-ups (AI)` item and the matching `Senior Developer Review (AI)` action item.
+- [x] Route verbose validation output to `validation/` instead of bloating the story file.
+- [x] Append compact execution history to `<story_id>-story-changelog.md` when needed.
 
 ### Code review workflow
 
-- [ ] Update `/code-review` to write raw review reports under `reviews/`.
-- [ ] Define raw review filenames: `reviews/<story_id>-Rn-reviewer-a.md` and `reviews/<story_id>-Rn-reviewer-b.md`.
-- [ ] Define the triaged findings filename: `reviews/<story_id>-Rn-findings.md`.
-- [ ] Ensure review reports use structured verdicts and findings.
-- [ ] Ensure `Low`/deferred findings are appended to `docs/_bmad-output/implementation-artifacts/deferred-work.md` when applicable.
-- [ ] Ensure story status and `sprint-status.yaml` are synced according to unresolved blocking findings.
+- [x] Update `/code-review` to write raw review reports under `reviews/`.
+- [x] Define raw review filenames: `reviews/<story_id>-Rn-reviewer-a.md` and `reviews/<story_id>-Rn-reviewer-b.md`.
+- [x] Define the triaged findings filename: `reviews/<story_id>-Rn-findings.md`.
+- [x] Ensure review reports use structured verdicts and findings.
+- [x] Ensure `Low`/deferred findings are appended to `docs/_bmad-output/implementation-artifacts/deferred-work.md` when applicable.
+- [x] Ensure story status and `sprint-status.yaml` are synced according to unresolved blocking findings.
 
 ### Findings triage / deduplication
 
-- [ ] Decide whether to implement findings triage as a dedicated agent, workflow step, or project-local role.
-- [ ] Define the triage task prompt/contract.
-- [ ] Ensure the triage step reads raw reviewer reports for the current round.
-- [ ] Ensure the triage step deduplicates by root cause, affected constraint, and location.
-- [ ] Ensure the triage step assigns stable finding ids: `F-Rn-001`, `F-Rn-002`, ...
-- [ ] Ensure the triage step writes `reviews/<story_id>-Rn-findings.md` using the required format.
-- [ ] Ensure the triage step writes linked short action items to `Senior Developer Review (AI)`.
-- [ ] Ensure the triage step writes linked dev tasks to `Tasks / Subtasks -> Review Follow-ups (AI)`.
-- [ ] Ensure no full raw review prose is copied into the story file.
+- [x] Decide whether to implement findings triage as a dedicated agent, workflow step, or project-local role.
+- [x] Define the triage task prompt/contract.
+- [x] Ensure the triage step reads raw reviewer reports for the current round.
+- [x] Ensure the triage step deduplicates by root cause, affected constraint, and location.
+- [x] Ensure the triage step assigns stable finding ids: `F-Rn-001`, `F-Rn-002`, ...
+- [x] Ensure the triage step writes `reviews/<story_id>-Rn-findings.md` using the required format.
+- [x] Ensure the triage step writes linked short action items to `Senior Developer Review (AI)`.
+- [x] Ensure the triage step writes linked dev tasks to `Tasks / Subtasks -> Review Follow-ups (AI)`.
+- [x] Ensure no full raw review prose is copied into the story file.
 
 ### Dev cycle workflow
 
-- [ ] Update `/dev-cycle` to create/update `<story_id>-cycle-state.md` instead of embedding large task-state blocks in the story.
-- [ ] Update `/dev-cycle` to create/update `<story_id>-orchestrator-log.md`.
-- [ ] Update `/dev-cycle` to pass `taskStatePath` to the Markdown cycle-state artifact or selected durable Markdown task artifact.
-- [ ] Update `/dev-cycle` to accept optional max iterations: `/dev-cycle <story-folder-or-file> [maxIterations]`.
-- [ ] Validate `maxIterations` as an integer in range `1..5`.
-- [ ] Default `maxIterations` to `5` when omitted.
-- [ ] Record chosen `maxIterations` in cycle state and orchestrator log.
-- [ ] Ensure every formal dispatch uses explicit `context: "fresh"`.
-- [ ] Ensure the orchestrator validates that raw reviews, triaged findings, and story action links exist before routing the next iteration.
-- [ ] Ensure max-iteration stop leaves story status `in-progress` when blocking findings remain.
+- [x] Update `/dev-cycle` to create/update `<story_id>-cycle-state.md` instead of embedding large task-state blocks in the story.
+- [x] Update `/dev-cycle` to create/update `<story_id>-orchestrator-log.md`.
+- [x] Update `/dev-cycle` to pass `taskStatePath` to the Markdown cycle-state artifact or selected durable Markdown task artifact.
+- [x] Update `/dev-cycle` to accept optional max iterations: `/dev-cycle <story-folder-or-file> [maxIterations]`.
+- [x] Validate `maxIterations` as an integer in range `1..5`.
+- [x] Default `maxIterations` to `5` when omitted.
+- [x] Record chosen `maxIterations` in cycle state and orchestrator log.
+- [x] Ensure every formal dispatch uses explicit `context: "fresh"`.
+- [x] Ensure the orchestrator validates that raw reviews, triaged findings, and story action links exist before routing the next iteration.
+- [x] Ensure max-iteration stop leaves story status `in-progress` when blocking findings remain.
 
 ### Migration and compatibility
 
-- [ ] Add migration notes for existing story folders that use `<story_slug>.md` or flat review artifacts.
-- [ ] Keep legacy discovery paths read-compatible during transition.
-- [ ] Ensure new artifacts are always written using the canonical structure.
-- [ ] Add tests or smoke checks for canonical story discovery.
-- [ ] Add tests or smoke checks for review follow-up source-link parsing.
-- [ ] Add tests or smoke checks for malformed/missing finding source fail-closed behavior.
-- [ ] Add tests or smoke checks for `/dev-cycle` max-iteration argument parsing.
+- [x] Add migration notes for existing story folders that use `<story_slug>.md` or flat review artifacts.
+- [x] Keep legacy discovery paths read-compatible during transition.
+- [x] Ensure new artifacts are always written using the canonical structure.
+- [x] Add tests or smoke checks for canonical story discovery.
+- [x] Add tests or smoke checks for review follow-up source-link parsing.
+- [x] Add tests or smoke checks for malformed/missing finding source fail-closed behavior.
+- [x] Add tests or smoke checks for `/dev-cycle` max-iteration argument parsing.

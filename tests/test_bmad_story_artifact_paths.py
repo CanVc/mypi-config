@@ -1,8 +1,8 @@
 """Story 1.2.1 regression checks for story-scoped BMAD artifacts.
 
 These tests validate the active .pi skill instructions for the v1 convention:
-`{implementation_artifacts}/{story_key}/{story_key}.md`, with legacy flat
-story files supported only as a fallback.
+`{implementation_artifacts}/{story_slug}/{story_id}-story.md`, with legacy folder
+and flat story files supported only as fallback inputs.
 """
 
 import re
@@ -12,14 +12,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PI_SKILLS = ROOT / ".pi" / "skills"
+PI_REFERENCES = ROOT / ".pi" / "references"
+PI_AGENTS = ROOT / ".pi" / "agents"
 
 
 def read_skill(relative_path: str) -> str:
     return (PI_SKILLS / relative_path).read_text(encoding="utf-8")
 
 
+def story_id_from_key(story_key: str) -> str:
+    return "-".join(story_key.split("-")[:2])
+
+
 def canonical_story_path(implementation_artifacts: Path, story_key: str) -> Path:
-    return implementation_artifacts / story_key / f"{story_key}.md"
+    return implementation_artifacts / story_key / f"{story_id_from_key(story_key)}-story.md"
 
 
 def legacy_story_path(implementation_artifacts: Path, story_key: str) -> Path:
@@ -34,7 +40,10 @@ def review_artifact_dir(implementation_artifacts: Path, spec_file: Path, story_k
     if spec_file.parent == implementation_artifacts and re.match(r"^\d+-\d+-[a-z0-9-]+$", spec_file.stem):
         return implementation_artifacts / spec_file.stem
 
-    if spec_file.parent.parent == implementation_artifacts and spec_file.parent.name == spec_file.stem:
+    if spec_file.parent.parent == implementation_artifacts and (
+        spec_file.name == f"{story_id_from_key(spec_file.parent.name)}-story.md"
+        or spec_file.parent.name == spec_file.stem
+    ):
         return spec_file.parent
 
     return spec_file.parent
@@ -61,8 +70,8 @@ def discover_story_files(implementation_artifacts: Path) -> list[Path]:
             continue
         if path.name.startswith("review-"):
             continue
-        # Canonical folder-based file or legacy flat file.
-        if path.parent == implementation_artifacts or path.parent.name == stem:
+            # Canonical folder-based file or legacy flat file.
+        if path.parent == implementation_artifacts or path.name == f"{story_id_from_key(path.parent.name)}-story.md" or path.parent.name == stem:
             results.append(path)
     return sorted(results)
 
@@ -108,16 +117,16 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
 
     def test_create_story_writes_folder_path_and_scans_previous_stories_recursively(self):
         text = read_skill("bmad-create-story/workflow.md")
-        self.assertIn("{implementation_artifacts}/{{story_key}}/{{story_key}}.md", text)
+        self.assertIn("{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story.md", text)
         self.assertIn("Ensure the story artifact directory exists", text)
         self.assertIn("canonical folder-based story files first", text)
-        self.assertIn("legacy flat story files", text)
+        self.assertIn("legacy folder/flat story files", text)
         self.assertNotIn("`default_output_file` = `{implementation_artifacts}/{{story_key}}.md`", text)
 
     def test_dev_story_prefers_story_folder_and_preserves_legacy_fallback(self):
         text = read_skill("bmad-dev-story/workflow.md")
-        self.assertIn("{implementation_artifacts}/{{story_key}}/{{story_key}}.md", text)
-        self.assertIn("Fall back to legacy flat story file", text)
+        self.assertIn("{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story.md", text)
+        self.assertIn("Fall back to legacy folder story file", text)
         self.assertIn("Preserve explicit story_path support", text)
         self.assertNotIn("Find matching story file in {implementation_artifacts} using story_key pattern: {{story_key}}.md", text)
 
@@ -125,12 +134,12 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
         gather = read_skill("bmad-code-review/steps/step-01-gather-context.md")
         review = read_skill("bmad-code-review/steps/step-02-review.md")
         present = read_skill("bmad-code-review/steps/step-04-present.md")
-        self.assertIn("resolve `{spec_file}` by first checking `{implementation_artifacts}/{story_key}/{story_key}.md`", gather)
+        self.assertIn("checking canonical `{implementation_artifacts}/{story_key}/{story_id_dash}-story.md`", gather)
         self.assertIn("Set `{review_artifact_dir}` to `{implementation_artifacts}/{story_key}` whenever `{story_key}` is known", gather)
-        self.assertIn("legacy flat `{implementation_artifacts}/{story_key}.md`, derive `{story_key}`", gather)
+        self.assertIn("legacy flat `{implementation_artifacts}/{story_key}.md`, derive `{story_key}` and `{story_id_dash}`", gather)
         self.assertIn("generate prompt files in `{review_artifact_dir}`", review)
         self.assertIn("`{review_artifact_dir}` MUST be `{implementation_artifacts}/{story_key}`", review)
-        self.assertIn("review-{{story_key}}-<reviewer-role>-prompt.md", review)
+        self.assertIn("reviews/` matching `{{story_id_dash}}-<reviewer-role>-prompt.md", review)
         self.assertIn("Only `{deferred_work_file}` remains global", present)
 
     def test_sprint_and_related_workflows_are_folder_aware(self):
@@ -148,6 +157,28 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
         self.assertIn("resolve the selected story to `{implementation_artifacts}/{story_key}/{story_key}.md` first", checkpoint)
         self.assertIn("folder-based BMAD story files", quick_dev)
 
+    def test_reference_contracts_and_findings_links_are_documented(self):
+        artifact = (PI_REFERENCES / "artifact-format.md").read_text(encoding="utf-8")
+        status = (PI_REFERENCES / "workflow-status-codes.md").read_text(encoding="utf-8")
+        dev_story = read_skill("bmad-dev-story/workflow.md")
+        triage = read_skill("bmad-code-review/steps/step-03-triage.md")
+        present = read_skill("bmad-code-review/steps/step-04-present.md")
+        dev_cycle = read_skill("bmad-dev-cycle/workflow.md")
+        triager_agent = (PI_AGENTS / "findings-triager.md").read_text(encoding="utf-8")
+
+        self.assertIn("<!-- bmad:cycle-state:start -->", artifact)
+        self.assertIn("<story_id>-story.md", artifact)
+        self.assertIn("reviews/<story_id>-R<n>-findings.md", artifact)
+        self.assertIn("Source: `reviews/1-2-R2-findings.md#F-R2-001`", artifact)
+        self.assertIn("pending\nin-progress\ncompleted\nblocked\nfailed", status)
+        self.assertIn("Source:", dev_story)
+        self.assertIn("missing `*-findings.md` file", dev_story)
+        self.assertIn("{review_artifact_dir}/reviews/{story_id_dash}-R<number>-findings.md", triage)
+        self.assertIn("[F-R<number>-001]", present)
+        self.assertIn("taskStatePath: \"{cycle_state_file}\"", dev_cycle)
+        self.assertIn("maxIterations", dev_cycle)
+        self.assertIn("findings-triager", triager_agent)
+
     def test_no_active_story_workflow_instructs_flat_new_story_or_root_review_outputs(self):
         disallowed_snippets = {
             "bmad-create-story/workflow.md": [
@@ -155,6 +186,7 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
             ],
             "bmad-dev-story/workflow.md": [
                 "Find matching story file in {implementation_artifacts} using story_key pattern: {{story_key}}.md",
+                "Resolve the matching story file by checking `{implementation_artifacts}/{{story_key}}/{{story_key}}.md` first",
             ],
             "bmad-code-review/steps/step-02-review.md": [
                 "generate prompt files in `{implementation_artifacts}` — one per reviewer role",

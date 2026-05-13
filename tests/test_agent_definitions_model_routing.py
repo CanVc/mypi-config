@@ -70,6 +70,16 @@ EXPECTED_AGENTS = {
         "inheritSkills": False,
         "defaultContext": "fresh",
     },
+    "findings-triager": {
+        "file": "findings-triager.md",
+        "roleLabel": "BMAD Findings Triager",
+        "model": "openai-codex/gpt-5.5",
+        "tools": ["read", "grep", "find", "ls", "bash", "edit", "write"],
+        "systemPromptMode": "replace",
+        "inheritProjectContext": True,
+        "inheritSkills": False,
+        "defaultContext": "fresh",
+    },
 }
 
 # Agents that must NOT exist as dispatchable wrappers

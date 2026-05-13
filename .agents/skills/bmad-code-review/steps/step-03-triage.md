@@ -19,11 +19,17 @@
 
    Convert all to a unified list where each finding has:
    - `id` -- sequential integer
-   - `source` -- `blind`, `edge`, `auditor`, or merged sources (e.g., `blind+edge`)
+   - `findingId` -- stable round-scoped id in the format `F-R<number>-001`, assigned after the review round is known
+   - `source` -- `blind`, `edge`, `auditor`, `reviewer-a`, `reviewer-b`, or merged sources (e.g., `blind+edge`)
    - `title` -- one-line summary
    - `severity` -- exactly one of `High`, `Medium`, or `Low`
+   - `classification` -- one of `implementation-issue`, `test-issue`, `spec-ambiguity`, `artifact-invalid`, `retry-limit-reached`, `environment-blocked`, `workflow-contract-violation`
+   - `blocking` -- boolean after severity-aware classification
    - `detail` -- full description
    - `location` -- file and line reference (if available)
+   - `requiredFix` -- actionable implementation guidance when fixable
+   - `validationRequirements` -- required validation evidence
+   - `outOfScope` -- what must not be changed while fixing
 
    If a finding lacks severity, assign `Medium` by default and note the missing severity in the parsing issues. Do not allow a finding to proceed without an explicit or assigned severity.
 
@@ -56,6 +62,56 @@
 7. If zero findings remain after triage (all rejected or none raised): state "✅ Clean review — all layers passed." (Step 3 already warned if any review layers failed via `{failed_layers}`.)
 
 8. If findings remain but all are `Low` deferred findings, state "ℹ️ Non-blocking review findings only — Low severity items will be deferred unless the user asks to fix them now."
+
+9. Determine the review pass tag for this run before persistence:
+   - Use `R1` for the first review pass on a story.
+   - If the story already contains Senior Developer Review action items with `[R<number>]` tags, use the next number.
+   - Reuse the same `R<number>` for every finding in this review run.
+
+10. If `{spec_file}` is set for a BMAD story, create `{review_artifact_dir}/reviews` if needed and write the triaged findings artifact before story action items are written:
+
+   ```text
+   {review_artifact_dir}/reviews/{story_id_dash}-R<number>-findings.md
+   ```
+
+   Required artifact shape:
+
+   ```md
+   # {story_id_dash} R<number> Findings
+
+   ## Summary
+   Verdict: PASS | CHANGES_REQUESTED | BLOCKED
+   Blocking findings: <count>
+
+   Source reviews:
+   - `reviews/<raw-review-file>.md`
+
+   ## Findings
+
+   ### F-R<number>-001
+   Status: open  
+   Severity: HIGH  
+   Classification: implementation-issue  
+   Blocking: true  
+   AC/Constraint: AC3  
+   Location: `path:line`  
+   Sources:
+   - `reviews/<raw-review-file>.md`
+
+   #### Problem
+   ...
+
+   #### Required Fix
+   ...
+
+   #### Validation Requirements
+   ...
+
+   #### Out of Scope
+   ...
+   ```
+
+11. Store the findings artifact path and each finding anchor for Step 4. Step 4 must link story action items to these exact anchors; do not copy full raw review prose into the story.
 
 
 ## NEXT

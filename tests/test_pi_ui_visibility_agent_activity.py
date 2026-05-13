@@ -66,7 +66,7 @@ class TestPiUiVisibilityContract(unittest.TestCase):
 
     def test_parent_workflow_exposes_task_state_path_to_pi_subagents(self):
         text = read(DEV_CYCLE)
-        self.assertIn('taskStatePath: "{story_file}"', text)
+        self.assertIn('taskStatePath: "{cycle_state_file}"', text)
         self.assertIn('context: "fresh"', text)
         dispatch_blocks = re.findall(r"subagent\(\{.*?\}\)", text, flags=re.DOTALL)
         self.assertGreaterEqual(len(dispatch_blocks), 2)
@@ -98,6 +98,7 @@ class TestRoleLabelsAndActivityTitles(unittest.TestCase):
             "implementer.md": "BMAD Implementer",
             "reviewer-a.md": "BMAD Reviewer A",
             "reviewer-b.md": "BMAD Reviewer B",
+            "findings-triager.md": "BMAD Findings Triager",
         }
         for filename, role_label in expected.items():
             frontmatter = read(AGENTS_DIR / filename).split("---", 2)[1]

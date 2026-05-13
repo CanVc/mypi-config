@@ -40,7 +40,7 @@ Active v1 BMAD session policy is fail-closed and artifact-first:
 - Future TDD red/green repair exceptions are future scope only. Do not assume or implement v2 repair/resume behavior in v1 story or review flows.
 - `context: "fork"` is unsafe for BMAD formal dispatches because it can branch from the parent persisted session and include hidden runtime history. Reject it before dispatch rather than treating it as equivalent to fresh.
 - `subagent({ action: "resume", ... })` is session reuse for BMAD policy purposes. Standard BMAD story/review workflows MUST block it unless an active workflow explicitly documents and tests a policy-approved repair case; v1 has no such case.
-- Always-fresh roles have no exception: `reviewer-a`, `reviewer-b`, active `bmad-code-review` review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor), validators, final reviewers, and final-review retry loops. A requested `fork` or `resume` for these roles MUST be blocked with a policy error.
+- Always-fresh roles have no exception: `reviewer-a`, `reviewer-b`, `findings-triager`, active `bmad-code-review` review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor), validators, final reviewers, and final-review retry loops. A requested `fork` or `resume` for these roles MUST be blocked with a policy error.
 - Apply this policy before every single-agent `agent` dispatch, top-level parallel `tasks` dispatch, `chain` dispatch, and parallel-chain dispatch. If any member of a parallel or chain request violates policy, fail closed before any child launch.
 - On policy rejection, stop execution safely before any Markdown artifact state transition. Do not mark story/review state, task checkboxes, sprint state, or review outcomes after a rejected session request.
 - Policy rejection messages MUST identify `requestedAgent`, `requestedMode`, and `violatedPolicy`, and must state the requested context/resume mode and violated policy in human-readable text.
@@ -94,7 +94,7 @@ Formal BMAD parent workflows that sequence or fan out child agents MUST maintain
 
 ### Durable State Location
 
-- Write and read the orchestrator-managed task list in the relevant BMAD story/spec/run artifact when one exists: the story Dev Agent Record, review artifact, quick-dev spec, or workflow run artifact selected by the active workflow.
+- Write and read the orchestrator-managed task list in the relevant BMAD story/spec/run artifact when one exists: the story-scoped cycle-state Markdown artifact, story Dev Agent Record, review artifact, quick-dev spec, or workflow run artifact selected by the active workflow.
 - If no story/spec/run artifact exists, create and name a Markdown artifact for the active workflow run before dispatch, then use that named Markdown artifact as the durable task-list source of truth.
 - Do not treat hidden runtime memory, `progress.md`, or background `status.json` as sufficient builder-facing task-list state.
 
@@ -115,7 +115,7 @@ tasks:
     contextSource:
       type: "artifact-path"
       paths:
-        - "docs/_bmad-output/implementation-artifacts/<story-key>/<story-key>.md"
+        - "docs/_bmad-output/implementation-artifacts/<story-slug>/<story-id>-story.md"
     dependsOn: []
     activeAgentId: null
     outputArtifact: null
@@ -200,7 +200,7 @@ subagent({
 - BMAD `sessionMode: resume`, omitted context, `context: "fork"`, and `action: "resume"` are not valid for active v1 standard BMAD dispatches.
 - Use `agentScope: "both"` only when user and project agents are intentionally trusted.
 - Use `agentScope: "project"` when delegation must be limited to project-local agents.
-- Prefer project-owned agents (`implementer`, `reviewer-a`, `reviewer-b`) for formal BMAD story/review paths; use packaged builtin agents such as `scout`, `planner`, `worker`, `reviewer`, `oracle`, `researcher`, `context-builder`, and `delegate` only for informal or explicitly scoped work.
+- Prefer project-owned agents (`implementer`, `reviewer-a`, `reviewer-b`, `findings-triager`) for formal BMAD story/review paths; use packaged builtin agents such as `scout`, `planner`, `worker`, `reviewer`, `oracle`, `researcher`, `context-builder`, and `delegate` only for informal or explicitly scoped work.
 
 ## Dispatch Evidence
 
