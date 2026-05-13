@@ -28,6 +28,8 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 ### Paths
 
 - `story_file` = `` (explicit story path; auto-discovered if empty)
+- `story_id_dash` = extracted from the first two dash-separated tokens of `story_key`, e.g. `1-2`
+- `story_folder` = `{implementation_artifacts}/{{story_key}}`
 - `sprint_status` = `{implementation_artifacts}/sprint-status.yaml`
 
 ### Context
@@ -52,7 +54,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
   <step n="1" goal="Find next ready story and load it" tag="sprint-status">
     <check if="{{story_path}} is provided">
-      <action>Use {{story_path}} directly</action>
+      <action>Preserve explicit story_path support: use {{story_path}} directly without rewriting it into the story-folder convention</action>
       <action>Read COMPLETE story file</action>
       <action>Extract story_key from filename or metadata</action>
       <goto anchor="task_check" />
@@ -116,9 +118,11 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
     <!-- Non-sprint story discovery -->
     <check if="{{sprint_status}} file does NOT exist">
-      <action>Search {implementation_artifacts} for stories directly</action>
+      <action>Search {implementation_artifacts} recursively for stories directly</action>
       <action>Find stories with "ready-for-dev" status in files</action>
-      <action>Look for story files matching pattern: *-*-*.md</action>
+      <action>Look for canonical story files matching pattern: `{implementation_artifacts}/<story-key>/<story-id>-story.md` where `<story-id>` is the first two dash-separated tokens of `<story-key>`</action>
+      <action>Also look for legacy folder and flat story files matching patterns `{implementation_artifacts}/<story-key>/<story-key>.md` and `{implementation_artifacts}/<story-key>.md` for backward compatibility only</action>
+      <action>Ignore story-scoped review artifacts such as `{{story_id_dash}}-reviews/*.md`, legacy `reviews/*.md`, `review-*.md`, and `*-findings.md` while discovering story files</action>
       <action>Read each candidate story file to check Status section</action>
 
       <check if="no ready-for-dev stories found in story files">
@@ -152,8 +156,10 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     </check>
 
     <action>Store the found story_key (e.g., "1-2-user-authentication") for later status updates</action>
-    <action>Find matching story file in {implementation_artifacts} using story_key pattern: {{story_key}}.md</action>
-    <action>Read COMPLETE story file from discovered path</action>
+    <action>Extract {{story_id_dash}} from the first two dash-separated tokens of {{story_key}} (e.g. `1-2` from `1-2-user-authentication`)</action>
+    <action>Resolve the matching story file by checking canonical `{implementation_artifacts}/{{story_key}}/{{story_id_dash}}-story.md` first</action>
+    <action>Fall back to legacy folder story file `{implementation_artifacts}/{{story_key}}/{{story_key}}.md`, then legacy flat story file `{implementation_artifacts}/{{story_key}}.md`, only if the canonical story file does not exist</action>
+    <action>Read COMPLETE story file from the resolved path and keep that selected path for all later story-file status and checkbox updates</action>
 
     <anchor id="task_check" />
 
@@ -201,6 +207,10 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       </action>
       <action>Count unchecked [ ] review follow-up tasks in "Review Follow-ups (AI)" subsection</action>
       <action>Store list of unchecked review items as {{pending_review_items}}</action>
+      <action>For every unchecked `[AI-Review]` item, extract the required source link in the exact form `Source: `{{story_id_dash}}-reviews/{{story_id_dash}}-R<number>-findings.md#F-R<number>-<id>``</action>
+      <action>HALT as `artifact-invalid` if any new unchecked `[AI-Review]` item is missing a `Source:` link, references a missing `*-findings.md` file, references a missing finding anchor, or references a malformed/contradictory finding record</action>
+      <action>Read only the referenced `{{story_id_dash}}-reviews/*-findings.md` files in the normal path; do not scan raw reviewer reports unless an explicit legacy fallback to `reviews/*-findings.md` is authorized by the user/workflow</action>
+      <action>For each referenced finding anchor such as `### F-R2-001`, extract `Problem`, `Required Fix`, `Validation Requirements`, and `Out of Scope`; store this as {{pending_review_finding_context}}</action>
 
       <output>⏯️ **Resuming Story After Code Review** ({{review_date}})
 
@@ -264,6 +274,11 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
     <critical>FOLLOW THE STORY FILE TASKS/SUBTASKS SEQUENCE EXACTLY AS WRITTEN - NO DEVIATION</critical>
 
     <action>Review the current task/subtask from the story file - this is your authoritative implementation guide</action>
+    <check if="current task is a review follow-up with `[AI-Review]`">
+      <action>Use the matching entry from {{pending_review_finding_context}} as the required implementation context</action>
+      <action>Implement only the finding's `Required Fix`; obey its `Out of Scope`; include its `Validation Requirements` in the validation plan</action>
+      <action>HALT if the task cannot be matched to an exact `F-R<number>-<id>` source finding</action>
+    </check>
     <action>Plan implementation following red-green-refactor cycle</action>
 
     <!-- RED PHASE -->
@@ -326,7 +341,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <action>Mark task checkbox [x] in "Tasks/Subtasks → Review Follow-ups (AI)" section</action>
 
       <!-- CRITICAL: Also mark corresponding action item in review section -->
-      <action>Find matching action item in "Senior Developer Review (AI) → Action Items" section by matching description</action>
+      <action>Find matching action item in "Senior Developer Review (AI) → Action Items" section by matching the exact finding id tag `[F-R<number>-<id>]`; fall back to matching description only for legacy action items without a finding id</action>
       <action>Mark that action item checkbox [x] as resolved</action>
 
       <action>Add to Dev Agent Record → Completion Notes: "✅ Resolved review finding [{{severity}}]: {{description}}"</action>

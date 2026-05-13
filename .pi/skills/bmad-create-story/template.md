@@ -41,8 +41,9 @@ so that {{benefit}}.
 - Changelog: `{{story_id_dash}}-story-changelog.md`
 - Orchestrator log: `{{story_id_dash}}-orchestrator-log.md`
 - Cycle state: `{{story_id_dash}}-cycle-state.md`
-- Reviews: `reviews/`
-- Validation: `validation/`
+- Reviews: `{{story_id_dash}}-reviews/`
+- Remediation: `{{story_id_dash}}-remediation/`
+- Validation: `{{story_id_dash}}-validation/`
 - Runtime proof: `{{story_id_dash}}-runtime-proof/`
 
 ## Dev Agent Record

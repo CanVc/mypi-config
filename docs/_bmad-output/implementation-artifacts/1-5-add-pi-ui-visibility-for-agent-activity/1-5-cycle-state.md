@@ -37,7 +37,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R1"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-a.md"
     routingDecision: "dev-R1 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R1 is eligible."
     cause: null
     recommendedNextAction: null
@@ -52,7 +52,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R1"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-b.md"
     routingDecision: "dev-R1 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R1 is eligible."
     cause: null
     recommendedNextAction: null
@@ -82,7 +82,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R2"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-a.md"
     routingDecision: "dev-R2 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R2 is eligible."
     cause: null
     recommendedNextAction: null
@@ -97,7 +97,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R2"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-b.md"
     routingDecision: "dev-R2 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R2 is eligible."
     cause: null
     recommendedNextAction: null
@@ -127,7 +127,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R3"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-a.md"
     routingDecision: "dev-R3 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R3 is eligible."
     cause: null
     recommendedNextAction: null
@@ -142,7 +142,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R3"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-b.md"
     routingDecision: "dev-R3 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R3 is eligible."
     cause: null
     recommendedNextAction: null
@@ -172,7 +172,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R4"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-a.md"
     routingDecision: "dev-R4 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R4 is eligible."
     cause: null
     recommendedNextAction: null
@@ -187,7 +187,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R4"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-b.md"
     routingDecision: "dev-R4 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R4 is eligible."
     cause: null
     recommendedNextAction: null
@@ -217,7 +217,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R5"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-a.md"
     routingDecision: "dev-R5 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R5 is eligible."
     cause: null
     recommendedNextAction: null
@@ -232,7 +232,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R5"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-b.md"
     routingDecision: "dev-R5 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R5 is eligible."
     cause: null
     recommendedNextAction: null
@@ -262,7 +262,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["targeted-dev-central-arbitration"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R6-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R6-reviewer-a.md"
     routingDecision: "targeted-dev-central-arbitration completed and parent validation accepted story artifact/readability and validation evidence; targeted-review-a-central-arbitration is eligible."
     cause: null
     recommendedNextAction: null
@@ -277,7 +277,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["targeted-dev-central-arbitration"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R6-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R6-reviewer-b.md"
     routingDecision: "targeted-dev-central-arbitration completed and parent validation accepted story artifact/readability and validation evidence; targeted-review-b-central-arbitration is eligible."
     cause: null
     recommendedNextAction: null

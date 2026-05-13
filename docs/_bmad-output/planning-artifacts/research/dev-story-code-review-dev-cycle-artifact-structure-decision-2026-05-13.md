@@ -12,7 +12,8 @@
 Story execution artifacts should follow the existing Agentic TDD story artifact specification **minus TDD-specific files for now**, with one deliberate folder-name refinement:
 
 - the story folder uses the full story slug for readability;
-- files inside the folder use the short story id prefix from the original specification.
+- files inside the folder use the short story id prefix from the original specification;
+- story-scoped folders are also prefixed by the short story id (`<story_id>-reviews/`, `<story_id>-remediation/`, `<story_id>-validation/`, `<story_id>-runtime-proof/`).
 
 Example:
 
@@ -24,7 +25,7 @@ docs/_bmad-output/implementation-artifacts/1-2-un-exemple-de-story/
   1-2-cycle-state.md
   1-2-runtime-proof/
 
-  reviews/
+  1-2-reviews/
     1-2-R1-reviewer-a.md
     1-2-R1-reviewer-b.md
     1-2-R1-findings.md
@@ -32,10 +33,10 @@ docs/_bmad-output/implementation-artifacts/1-2-un-exemple-de-story/
     1-2-R2-reviewer-b.md
     1-2-R2-findings.md
 
-  remediation/
+  1-2-remediation/
     1-2-R3-remediation-brief.md
 
-  validation/
+  1-2-validation/
     1-2-validation-summary.md
     command-output-*.log
 ```
@@ -243,7 +244,7 @@ tasks:
       type: artifact-path
       paths:
         - 1-2-story.md
-        - reviews/1-2-R1-findings.md
+        - 1-2-reviews/1-2-R1-findings.md
     dependsOn: []
     activeAgentId: null
     outputArtifact: null
@@ -270,7 +271,7 @@ blocked
 failed
 ```
 
-### 4.5 `reviews/1-2-Rn-reviewer-a.md` and `reviews/1-2-Rn-reviewer-b.md`
+### 4.5 `1-2-reviews/1-2-Rn-reviewer-a.md` and `1-2-reviews/1-2-Rn-reviewer-b.md`
 
 Purpose:
 
@@ -300,7 +301,7 @@ PASS | CHANGES_REQUESTED | BLOCKED
 ## Notes
 ```
 
-### 4.6 `reviews/1-2-Rn-findings.md`
+### 4.6 `1-2-reviews/1-2-Rn-findings.md`
 
 Purpose:
 
@@ -312,7 +313,7 @@ Purpose:
 The filename intentionally omits `normalized`:
 
 ```text
-reviews/1-2-R2-findings.md
+1-2-reviews/1-2-R2-findings.md
 ```
 
 By convention, `*-findings.md` means deduplicated / triaged / actionable / parent-validated findings.
@@ -327,8 +328,8 @@ Verdict: CHANGES_REQUESTED
 Blocking findings: 2
 
 Source reviews:
-- `reviews/1-2-R2-reviewer-a.md`
-- `reviews/1-2-R2-reviewer-b.md`
+- `1-2-reviews/1-2-R2-reviewer-a.md`
+- `1-2-reviews/1-2-R2-reviewer-b.md`
 
 ## Findings
 
@@ -340,8 +341,8 @@ Blocking: true
 AC/Constraint: AC3  
 Location: `src/foo.ts:42`  
 Sources:
-- `reviews/1-2-R2-reviewer-a.md`
-- `reviews/1-2-R2-reviewer-b.md`
+- `1-2-reviews/1-2-R2-reviewer-a.md`
+- `1-2-reviews/1-2-R2-reviewer-b.md`
 
 #### Problem
 Describe the problem precisely.
@@ -369,7 +370,7 @@ reopened
 
 For the current workflow, the dev may mark the corresponding story checkboxes as complete after implementation. The stricter `implemented -> verified` lifecycle can be enforced later by reviewers using the findings artifact.
 
-### 4.7 `remediation/`
+### 4.7 `1-2-remediation/`
 
 Purpose:
 
@@ -378,7 +379,7 @@ Purpose:
 Recommended filename:
 
 ```text
-remediation/1-2-R3-remediation-brief.md
+1-2-remediation/1-2-R3-remediation-brief.md
 ```
 
 Recommended sections:
@@ -397,7 +398,7 @@ Recommended sections:
 ## Completion Criteria
 ```
 
-### 4.8 `validation/`
+### 4.8 `1-2-validation/`
 
 Purpose:
 
@@ -415,8 +416,8 @@ The story should contain only concise validation summaries, for example:
 Verbose logs should go under:
 
 ```text
-validation/command-output-*.log
-validation/1-2-validation-summary.md
+1-2-validation/command-output-*.log
+1-2-validation/1-2-validation-summary.md
 ```
 
 ### 4.9 `1-2-runtime-proof/`
@@ -443,11 +444,11 @@ This folder is part of the spec-compatible story layout even before runtime proo
 2. read `1-2-story.md`;
 3. detect unchecked `Review Follow-ups (AI)` under `Tasks / Subtasks`;
 4. extract explicit `Source: ...#F-Rn-xxx` references from those follow-ups;
-5. read only the referenced `reviews/1-2-Rn-findings.md` files in the normal case;
+5. read only the referenced `1-2-reviews/1-2-Rn-findings.md` files in the normal case;
 6. locate exact finding anchors such as `### F-R2-001`;
 7. use `Required Fix`, `Validation Requirements`, and `Out of Scope` while implementing;
 8. update permitted story sections;
-9. write verbose validation evidence under `validation/` when needed;
+9. write verbose validation evidence under `1-2-validation/` when needed;
 10. append compact history to `1-2-story-changelog.md` when needed.
 
 Fail-closed rules for review follow-up discovery:
@@ -469,8 +470,8 @@ Current checkbox behavior is preserved:
 
 `/code-review` should:
 
-1. write complete raw review output under `reviews/`;
-2. produce or trigger production of `reviews/1-2-Rn-findings.md` when review findings need triage/deduplication;
+1. write complete raw review output under `1-2-reviews/`;
+2. produce or trigger production of `1-2-reviews/1-2-Rn-findings.md` when review findings need triage/deduplication;
 3. write only short current action items into `1-2-story.md`;
 4. append deferred/non-blocking work to `docs/_bmad-output/implementation-artifacts/deferred-work.md` when applicable;
 5. update story status and sprint status according to blocking findings.
@@ -483,10 +484,10 @@ Preferred model:
 
 ```text
 reviewer-a + reviewer-b
-  -> raw reports in reviews/
+  -> raw reports in 1-2-reviews/
 
 findings-triager / review-triager
-  -> reviews/1-2-Rn-findings.md
+  -> 1-2-reviews/1-2-Rn-findings.md
   -> short linked action items in 1-2-story.md
 
 orchestrator
@@ -502,7 +503,7 @@ The triage agent must know exactly how to:
 4. preserve highest justified severity;
 5. classify each finding;
 6. assign stable ids `F-Rn-001`, `F-Rn-002`, ...;
-7. write `reviews/1-2-Rn-findings.md`;
+7. write `1-2-reviews/1-2-Rn-findings.md`;
 8. write linked story action items;
 9. avoid copying full review prose into the story.
 
@@ -529,7 +530,7 @@ It should:
 3. launch implementer with fresh context;
 4. launch reviewer A/B with fresh context;
 5. launch or otherwise use a findings triage/deduplication step;
-6. validate `reviews/1-2-Rn-findings.md` and linked story action items;
+6. validate `1-2-reviews/1-2-Rn-findings.md` and linked story action items;
 7. route next iteration based on unresolved blocking findings;
 8. stop at max iterations;
 9. leave story status `in-progress` if blocking findings remain;
@@ -576,7 +577,7 @@ Format:
 
 ### Action Items
 
-- [x] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [x] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `1-2-reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 ### 6.2 `Review Follow-ups (AI)`
@@ -594,7 +595,7 @@ Location:
 
 ### Review Follow-ups (AI)
 
-- [x] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [x] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `1-2-reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 ### 6.3 Required fields
@@ -605,7 +606,7 @@ Every unresolved review follow-up must include:
 - severity: `[HIGH]`, `[MEDIUM]`, or `[LOW]`;
 - AC/constraint tag: `[AC3]` or `[N/A]`;
 - finding id: `[F-R2-001]`;
-- explicit source link: `Source: `reviews/1-2-R2-findings.md#F-R2-001``.
+- explicit source link: `Source: 1-2-reviews/1-2-R2-findings.md#F-R2-001`.
 
 Normal `/dev-story` discovery starts from this explicit source link. It must not rely on heuristic discovery of raw review files.
 
@@ -651,7 +652,7 @@ Story status rules:
 Normal implementation context:
 
 1. `1-2-story.md`;
-2. referenced `reviews/1-2-Rn-findings.md` files for open follow-ups;
+2. referenced `1-2-reviews/1-2-Rn-findings.md` files for open follow-ups;
 3. relevant project context if configured;
 4. targeted source files as needed.
 
@@ -733,9 +734,9 @@ Update project-local workflows:
 
 - `bmad-create-story`: create story folder using `<story_id>-<slug>/` and story file `1-2-story.md`.
 - `bmad-dev-story`: resolve the canonical story file and follow `Source:` links from review follow-ups into `*-findings.md`.
-- `bmad-code-review`: write raw reports under `reviews/`, produce/trigger `*-findings.md`, write linked short action items into the story, and defer Low findings globally.
+- `bmad-code-review`: write raw reports under `1-2-reviews/`, produce/trigger `*-findings.md`, write linked short action items into the story, and defer Low findings globally.
 - `bmad-dev-cycle`: externalize cycle state/logs, accept optional max iteration argument `1..5`, and use the shared taxonomy.
-- Add or define a triage/deduplication role/agent/workflow step for producing `reviews/1-2-Rn-findings.md` and updating story action items.
+- Add or define a triage/deduplication role/agent/workflow step for producing `1-2-reviews/1-2-Rn-findings.md` and updating story action items.
 
 ---
 
@@ -746,8 +747,8 @@ Adopt the spec-compatible story artifact structure for all standard story execut
 `/dev-story`, `/code-review`, and `/dev-cycle` should all converge on the same taxonomy:
 
 - story file is compact and action-oriented;
-- raw reviews stay under `reviews/`;
-- deduplicated actionable findings live in `reviews/1-2-Rn-findings.md`;
+- raw reviews stay under `1-2-reviews/`;
+- deduplicated actionable findings live in `1-2-reviews/1-2-Rn-findings.md`;
 - story action items link explicitly to exact finding anchors;
 - `/dev-story` follows those links without heuristic review discovery;
 - cycle state is Markdown with machine-searchable markers;
@@ -765,7 +766,7 @@ This preserves BMAD story compatibility while making fresh-context handoffs boun
 - [x] Create `.pi/references/artifact-format.md`.
 - [x] Document canonical story folder naming: `<story_id>-<story-slug>/`.
 - [x] Document canonical file naming: `<story_id>-story.md`, `<story_id>-story-changelog.md`, `<story_id>-orchestrator-log.md`, `<story_id>-cycle-state.md`.
-- [x] Document canonical subfolders: `reviews/`, `remediation/`, `validation/`, `<story_id>-runtime-proof/`.
+- [x] Document canonical subfolders: `<story_id>-reviews/`, `<story_id>-remediation/`, `<story_id>-validation/`, `<story_id>-runtime-proof/`.
 - [x] Document future TDD additions: `<story_id>-test-plan.md`, `<story_id>-batches/`.
 - [x] Document required machine markers for `*-cycle-state.md`, including `<!-- bmad:cycle-state:start -->` and `<!-- bmad:cycle-state:end -->`.
 - [x] Create or update `.pi/references/workflow-status-codes.md`.
@@ -784,20 +785,20 @@ This preserves BMAD story compatibility while making fresh-context handoffs boun
 ### Dev story workflow
 
 - [x] Update `/dev-story` to detect unchecked `[AI-Review]` items under `Tasks / Subtasks -> Review Follow-ups (AI)`.
-- [x] Require every new unchecked `[AI-Review]` item to include `Source: \`reviews/<story_id>-Rn-findings.md#F-Rn-xxx\``.
+- [x] Require every new unchecked `[AI-Review]` item to include `Source: \`<story_id>-reviews/<story_id>-Rn-findings.md#F-Rn-xxx\``.
 - [x] Update `/dev-story` to read referenced `*-findings.md` files before implementing review follow-ups.
 - [x] Update `/dev-story` to locate exact finding headings such as `### F-R2-001`.
 - [x] Update `/dev-story` to use `Required Fix`, `Validation Requirements`, and `Out of Scope` from each finding.
 - [x] Add fail-closed behavior for missing source links, missing files, missing finding anchors, or malformed finding records.
 - [x] Preserve current checkbox behavior: after implementation, check both the `Review Follow-ups (AI)` item and the matching `Senior Developer Review (AI)` action item.
-- [x] Route verbose validation output to `validation/` instead of bloating the story file.
+- [x] Route verbose validation output to `<story_id>-validation/` instead of bloating the story file.
 - [x] Append compact execution history to `<story_id>-story-changelog.md` when needed.
 
 ### Code review workflow
 
-- [x] Update `/code-review` to write raw review reports under `reviews/`.
-- [x] Define raw review filenames: `reviews/<story_id>-Rn-reviewer-a.md` and `reviews/<story_id>-Rn-reviewer-b.md`.
-- [x] Define the triaged findings filename: `reviews/<story_id>-Rn-findings.md`.
+- [x] Update `/code-review` to write raw review reports under `<story_id>-reviews/`.
+- [x] Define raw review filenames: `<story_id>-reviews/<story_id>-Rn-reviewer-a.md` and `<story_id>-reviews/<story_id>-Rn-reviewer-b.md`.
+- [x] Define the triaged findings filename: `<story_id>-reviews/<story_id>-Rn-findings.md`.
 - [x] Ensure review reports use structured verdicts and findings.
 - [x] Ensure `Low`/deferred findings are appended to `docs/_bmad-output/implementation-artifacts/deferred-work.md` when applicable.
 - [x] Ensure story status and `sprint-status.yaml` are synced according to unresolved blocking findings.
@@ -809,7 +810,7 @@ This preserves BMAD story compatibility while making fresh-context handoffs boun
 - [x] Ensure the triage step reads raw reviewer reports for the current round.
 - [x] Ensure the triage step deduplicates by root cause, affected constraint, and location.
 - [x] Ensure the triage step assigns stable finding ids: `F-Rn-001`, `F-Rn-002`, ...
-- [x] Ensure the triage step writes `reviews/<story_id>-Rn-findings.md` using the required format.
+- [x] Ensure the triage step writes `<story_id>-reviews/<story_id>-Rn-findings.md` using the required format.
 - [x] Ensure the triage step writes linked short action items to `Senior Developer Review (AI)`.
 - [x] Ensure the triage step writes linked dev tasks to `Tasks / Subtasks -> Review Follow-ups (AI)`.
 - [x] Ensure no full raw review prose is copied into the story file.

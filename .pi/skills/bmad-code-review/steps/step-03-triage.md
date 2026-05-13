@@ -68,10 +68,10 @@
    - If the story already contains Senior Developer Review action items with `[R<number>]` tags, use the next number.
    - Reuse the same `R<number>` for every finding in this review run.
 
-10. If `{spec_file}` is set for a BMAD story, create `{review_artifact_dir}/reviews` if needed and write the triaged findings artifact before story action items are written:
+10. If `{spec_file}` is set for a BMAD story, create `{review_artifact_dir}/{story_id_dash}-reviews` if needed and write the triaged findings artifact before story action items are written:
 
    ```text
-   {review_artifact_dir}/reviews/{story_id_dash}-R<number>-findings.md
+   {review_artifact_dir}/{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md
    ```
 
    Required artifact shape:
@@ -84,7 +84,7 @@
    Blocking findings: <count>
 
    Source reviews:
-   - `reviews/<raw-review-file>.md`
+   - `{story_id_dash}-reviews/<raw-review-file>.md`
 
    ## Findings
 
@@ -96,7 +96,7 @@
    AC/Constraint: AC3  
    Location: `path:line`  
    Sources:
-   - `reviews/<raw-review-file>.md`
+   - `{story_id_dash}-reviews/<raw-review-file>.md`
 
    #### Problem
    ...

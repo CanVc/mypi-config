@@ -47,7 +47,7 @@ class BmadCodeReviewSeverityTests(unittest.TestCase):
                 self.assertIn("`### Action Items`", text)
                 self.assertIn("Use `[R1]` for the first review pass", text)
                 self.assertIn("[F-R<number>-001] <Title> [<file>:<line>]", text)
-                self.assertIn("Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001`", text)
+                self.assertIn("Source: `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001`", text)
                 self.assertIn("Do **not** write prose such as \"Second-pass review\"", text)
                 self.assertIn("`- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title/action>", text)
 

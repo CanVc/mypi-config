@@ -139,7 +139,7 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
         self.assertIn("legacy flat `{implementation_artifacts}/{story_key}.md`, derive `{story_key}` and `{story_id_dash}`", gather)
         self.assertIn("generate prompt files in `{review_artifact_dir}`", review)
         self.assertIn("`{review_artifact_dir}` MUST be `{implementation_artifacts}/{story_key}`", review)
-        self.assertIn("reviews/` matching `{{story_id_dash}}-<reviewer-role>-prompt.md", review)
+        self.assertIn("{{story_id_dash}}-reviews/` matching `{{story_id_dash}}-<reviewer-role>-prompt.md", review)
         self.assertIn("Only `{deferred_work_file}` remains global", present)
 
     def test_sprint_and_related_workflows_are_folder_aware(self):
@@ -157,6 +157,17 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
         self.assertIn("resolve the selected story to `{implementation_artifacts}/{story_key}/{story_key}.md` first", checkpoint)
         self.assertIn("folder-based BMAD story files", quick_dev)
 
+    def test_dev_story_mirrors_use_canonical_prefixed_findings_links(self):
+        for relative_root in [Path(".pi/skills"), Path(".agents/skills"), Path(".claude/skills")]:
+            path = ROOT / relative_root / "bmad-dev-story/workflow.md"
+            if not path.exists():
+                continue
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(path=path):
+                self.assertIn("{{story_id_dash}}-story.md", text)
+                self.assertIn("{{story_id_dash}}-reviews/{{story_id_dash}}-R<number>-findings.md", text)
+                self.assertIn("Read only the referenced `{{story_id_dash}}-reviews/*-findings.md`", text)
+
     def test_reference_contracts_and_findings_links_are_documented(self):
         artifact = (PI_REFERENCES / "artifact-format.md").read_text(encoding="utf-8")
         status = (PI_REFERENCES / "workflow-status-codes.md").read_text(encoding="utf-8")
@@ -168,12 +179,12 @@ class BmadStoryArtifactPathTests(unittest.TestCase):
 
         self.assertIn("<!-- bmad:cycle-state:start -->", artifact)
         self.assertIn("<story_id>-story.md", artifact)
-        self.assertIn("reviews/<story_id>-R<n>-findings.md", artifact)
-        self.assertIn("Source: `reviews/1-2-R2-findings.md#F-R2-001`", artifact)
+        self.assertIn("<story_id>-reviews/<story_id>-R<n>-findings.md", artifact)
+        self.assertIn("Source: `1-2-reviews/1-2-R2-findings.md#F-R2-001`", artifact)
         self.assertIn("pending\nin-progress\ncompleted\nblocked\nfailed", status)
         self.assertIn("Source:", dev_story)
         self.assertIn("missing `*-findings.md` file", dev_story)
-        self.assertIn("{review_artifact_dir}/reviews/{story_id_dash}-R<number>-findings.md", triage)
+        self.assertIn("{review_artifact_dir}/{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md", triage)
         self.assertIn("[F-R<number>-001]", present)
         self.assertIn("taskStatePath: \"{cycle_state_file}\"", dev_cycle)
         self.assertIn("maxIterations", dev_cycle)

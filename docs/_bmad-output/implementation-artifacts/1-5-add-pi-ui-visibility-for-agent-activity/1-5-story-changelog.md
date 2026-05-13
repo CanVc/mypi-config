@@ -52,5 +52,5 @@ Ultimate context engine analysis completed - comprehensive developer guide creat
 
 ## Migrated Historical Analysis Artifacts
 
-- Preimplementation scout analysis: `remediation/1-5-preimplementation-scout-analysis.md`
-- Preimplementation reviewer risk analysis: `remediation/1-5-preimplementation-reviewer-risk-analysis.md`
+- Preimplementation scout analysis: `1-5-remediation/1-5-preimplementation-scout-analysis.md`
+- Preimplementation reviewer risk analysis: `1-5-remediation/1-5-preimplementation-reviewer-risk-analysis.md`

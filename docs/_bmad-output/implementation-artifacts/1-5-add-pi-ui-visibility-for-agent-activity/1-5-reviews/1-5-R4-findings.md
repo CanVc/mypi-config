@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:850-858`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:869-873`  
 Sources:
-- `reviews/1-5-R4-reviewer-b.md`
+- `1-5-reviews/1-5-R4-reviewer-b.md`
 
 #### Problem
 Async multi-job widget can still show durable-terminal work as active.
@@ -32,7 +32,7 @@ Blocking: true
 AC/Constraint: AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:289-302`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:981-982`, `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:273-291`  
 Sources:
-- `reviews/1-5-R4-reviewer-b.md`
+- `1-5-reviews/1-5-R4-reviewer-b.md`
 
 #### Problem
 Async terminal title falls back to normal runtime activity when BMAD durable task IDs exist but `taskStatePath` is missing.

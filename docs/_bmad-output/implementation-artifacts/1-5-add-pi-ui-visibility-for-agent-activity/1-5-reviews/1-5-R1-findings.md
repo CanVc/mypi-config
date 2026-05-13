@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: AC1  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:183`  
 Sources:
-- `reviews/1-5-R1-reviewer-a.md`
+- `1-5-reviews/1-5-R1-reviewer-a.md`
 
 #### Problem
 Inactive/pending durable tasks do not display configured role labels.
@@ -32,8 +32,8 @@ Blocking: true
 AC/Constraint: AC2, AC3  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:207`  
 Sources:
-- `reviews/1-5-R1-reviewer-a.md`
-- `reviews/1-5-R1-reviewer-b.md`
+- `1-5-reviews/1-5-R1-reviewer-a.md`
+- `1-5-reviews/1-5-R1-reviewer-b.md`
 
 #### Problem
 Parallel same-agent activity titles can resolve/collapse to the wrong durable task.
@@ -55,7 +55,7 @@ Blocking: true
 AC/Constraint: AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:240`  
 Sources:
-- `reviews/1-5-R1-reviewer-a.md`
+- `1-5-reviews/1-5-R1-reviewer-a.md`
 
 #### Problem
 Missing task-state path silently suppresses degraded BMAD UI.
@@ -77,7 +77,7 @@ Blocking: true
 AC/Constraint: AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:122`  
 Sources:
-- `reviews/1-5-R1-reviewer-b.md`
+- `1-5-reviews/1-5-R1-reviewer-b.md`
 
 #### Problem
 Malformed durable task records missing required `contextSource` render as valid/completed instead of degraded.

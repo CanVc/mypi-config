@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: AC2, AC3  
 Location: `.pi/npm/node_modules/pi-subagents/src/runs/foreground/execution.ts:398`, `.pi/npm/node_modules/pi-subagents/src/runs/foreground/subagent-executor.ts:1861`, `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:260`  
 Sources:
-- `reviews/1-5-R2-reviewer-a.md`
+- `1-5-reviews/1-5-R2-reviewer-a.md`
 
 #### Problem
 Foreground single-run terminal titles lose durable task identity.
@@ -32,7 +32,7 @@ Blocking: true
 AC/Constraint: AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:346`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:354`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:651`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:708`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:784`  
 Sources:
-- `reviews/1-5-R2-reviewer-a.md`
+- `1-5-reviews/1-5-R2-reviewer-a.md`
 
 #### Problem
 Stale durable completed/blocked/failed tasks can still render as active in runtime widget rows.
@@ -54,7 +54,7 @@ Blocking: true
 AC/Constraint: AC2, AC3  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:260`  
 Sources:
-- `reviews/1-5-R2-reviewer-b.md`
+- `1-5-reviews/1-5-R2-reviewer-b.md`
 
 #### Problem
 Async job-level durable task identity is ignored when building activity titles.
@@ -76,7 +76,7 @@ Blocking: true
 AC/Constraint: AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:240`  
 Sources:
-- `reviews/1-5-R2-reviewer-b.md`
+- `1-5-reviews/1-5-R2-reviewer-b.md`
 
 #### Problem
 Missing `taskStatePath` degraded UI is suppressed for async BMAD jobs represented only by `durableTaskIds`.

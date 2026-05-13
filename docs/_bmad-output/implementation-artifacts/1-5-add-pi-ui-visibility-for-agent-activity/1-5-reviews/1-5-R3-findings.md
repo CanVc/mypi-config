@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: Package durability  
 Location: `.pi/patches/pi-subagents-0.24.2-ui-visibility-agent-activity.patch:1`  
 Sources:
-- `reviews/1-5-R3-reviewer-a.md`
+- `1-5-reviews/1-5-R3-reviewer-a.md`
 
 #### Problem
 Story 1.5 patch is not clean-install durable because it duplicates an earlier patch.
@@ -32,7 +32,7 @@ Blocking: true
 AC/Constraint: AC2, AC3  
 Location: `.pi/npm/node_modules/pi-subagents/src/extension/index.ts:471`, `.pi/npm/node_modules/pi-subagents/src/runs/foreground/subagent-executor.ts:1861`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:948`  
 Sources:
-- `reviews/1-5-R3-reviewer-b.md`
+- `1-5-reviews/1-5-R3-reviewer-b.md`
 
 #### Problem
 Foreground subagent runs still do not set terminal activity titles.
@@ -54,7 +54,7 @@ Blocking: true
 AC/Constraint: AC2, AC3, AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:965`, `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:278`  
 Sources:
-- `reviews/1-5-R3-reviewer-b.md`
+- `1-5-reviews/1-5-R3-reviewer-b.md`
 
 #### Problem
 Async terminal titles can stay active for durable completed/blocked/failed tasks when runtime still reports running.

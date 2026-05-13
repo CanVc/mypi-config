@@ -122,7 +122,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       <action>Find stories with "ready-for-dev" status in files</action>
       <action>Look for canonical story files matching pattern: `{implementation_artifacts}/<story-key>/<story-id>-story.md` where `<story-id>` is the first two dash-separated tokens of `<story-key>`</action>
       <action>Also look for legacy folder and flat story files matching patterns `{implementation_artifacts}/<story-key>/<story-key>.md` and `{implementation_artifacts}/<story-key>.md` for backward compatibility only</action>
-      <action>Ignore story-scoped review artifacts such as `reviews/*.md`, `review-*.md`, and `*-findings.md` while discovering story files</action>
+      <action>Ignore story-scoped review artifacts such as `{{story_id_dash}}-reviews/*.md`, legacy `reviews/*.md`, `review-*.md`, and `*-findings.md` while discovering story files</action>
       <action>Read each candidate story file to check Status section</action>
 
       <check if="no ready-for-dev stories found in story files">
@@ -207,9 +207,9 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
       </action>
       <action>Count unchecked [ ] review follow-up tasks in "Review Follow-ups (AI)" subsection</action>
       <action>Store list of unchecked review items as {{pending_review_items}}</action>
-      <action>For every unchecked `[AI-Review]` item, extract the required source link in the exact form `Source: `reviews/{{story_id_dash}}-R<number>-findings.md#F-R<number>-<id>``</action>
+      <action>For every unchecked `[AI-Review]` item, extract the required source link in the exact form `Source: `{{story_id_dash}}-reviews/{{story_id_dash}}-R<number>-findings.md#F-R<number>-<id>``</action>
       <action>HALT as `artifact-invalid` if any new unchecked `[AI-Review]` item is missing a `Source:` link, references a missing `*-findings.md` file, references a missing finding anchor, or references a malformed/contradictory finding record</action>
-      <action>Read only the referenced `reviews/*-findings.md` files in the normal path; do not scan raw reviewer reports unless an explicit legacy fallback is authorized by the user/workflow</action>
+      <action>Read only the referenced `{{story_id_dash}}-reviews/*-findings.md` files in the normal path; do not scan raw reviewer reports unless an explicit legacy fallback to `reviews/*-findings.md` is authorized by the user/workflow</action>
       <action>For each referenced finding anchor such as `### F-R2-001`, extract `Problem`, `Required Fix`, `Validation Requirements`, and `Out of Scope`; store this as {{pending_review_finding_context}}</action>
 
       <output>⏯️ **Resuming Story After Code Review** ({{review_date}})

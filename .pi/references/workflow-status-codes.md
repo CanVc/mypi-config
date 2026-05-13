@@ -74,7 +74,7 @@ Blocking rules:
 
 ## 4. Finding statuses
 
-Use this closed set in `reviews/<story_id>-R<n>-findings.md`:
+Use this closed set in `<story_id>-reviews/<story_id>-R<n>-findings.md`:
 
 ```text
 open

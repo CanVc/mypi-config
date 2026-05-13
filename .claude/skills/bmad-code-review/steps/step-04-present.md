@@ -7,7 +7,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 ## RULES
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
-- When `{spec_file}` is set, always write triaged findings to `reviews/{story_id_dash}-R<number>-findings.md` and linked action items to the story file before offering action choices. Only `{deferred_work_file}` remains global; story-specific review findings/artifacts must stay beside `{spec_file}` in that story folder.
+- When `{spec_file}` is set, always write triaged findings to `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md` and linked action items to the story file before offering action choices. Only `{deferred_work_file}` remains global; story-specific review findings/artifacts must stay beside `{spec_file}` in that story folder.
 - `decision-needed` findings must be resolved before handling `patch` findings.
 - Every persisted or presented finding MUST include uppercase severity: `[HIGH]`, `[MEDIUM]`, or `[LOW]`.
 - Next action is severity-aware: unresolved blocking `High` and blocking `Medium` findings require fix or human decision; `Low` findings are deferred by default and do not block story completion.
@@ -29,7 +29,7 @@ If `{spec_file}` exists and contains a Tasks/Subtasks section, write review find
    - If the story already contains Senior Developer Review action items with `[R<number>]` tags, use the next number for newly appended findings (for example, existing `[R1]` items means this run writes `[R2]`).
    - Reuse the same `[R<number>]` tag for every finding from the same review run.
    - Do **not** write prose such as "Second-pass review" or "Second pass review" in the action-item text; the `[R<number>]` tag is the only pass marker.
-   - Ensure each finding has a stable id `[F-R<number>-001]` and a source link to `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001`.
+   - Ensure each finding has a stable id `[F-R<number>-001]` and a source link to `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001`.
 
 3. Normalize action-item metadata:
    - Severity MUST be uppercase: `[HIGH]`, `[MEDIUM]`, or `[LOW]`.
@@ -38,16 +38,16 @@ If `{spec_file}` exists and contains a Tasks/Subtasks section, write review find
 4. Write all `### Action Items` findings in this order:
 
    - **`decision-needed`** findings (unchecked):
-     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> — decision needed: <Detail> — Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
+     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> — decision needed: <Detail> — Source: `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
 
    - **blocking `patch`** findings (unchecked):
-     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> [<file>:<line>] — Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
+     `- [ ] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> [<file>:<line>] — Source: `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
 
    - **`defer`** findings and non-blocking `Low` findings (checked off, marked deferred):
-     `- [x] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> [<file>:<line>] — deferred, <reason> — Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
+     `- [x] [R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title> [<file>:<line>] — deferred, <reason> — Source: `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
 
 5. For every unchecked `decision-needed` or blocking `patch` item, also add a matching unchecked task under `Tasks/Subtasks → ### Review Follow-ups (AI)` so `bmad-dev-story` can resume the work. Keep the dev follow-up marker first, then reuse the same review metadata and exact source link:
-   `- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title/action> — Source: `reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
+   `- [ ] [AI-Review][R<number>][<SEVERITY>][<AC refs or N/A>][F-R<number>-001] <Title/action> — Source: `{story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md#F-R<number>-001``
 
 Also append each `defer` finding and each non-blocking `Low` finding to `{deferred_work_file}` under a heading `## Deferred from: code review ({date})`. If `{spec_file}` is set, include its basename in the heading (e.g., `code review of story-3.3 (2026-03-18)`). One bullet per finding with uppercase severity, description, and defer reason.
 
@@ -57,7 +57,7 @@ Announce what was written:
 
 > **Code review complete.** <D> `decision-needed`, <P> blocking `patch`, <W> `defer`, <R> dismissed as noise. Severity: <H> High, <M> Medium, <L> Low.
 
-If `{spec_file}` is set, add: `Findings written to reviews/{story_id_dash}-R<number>-findings.md and linked Senior Developer Review (AI) action items in {spec_file}.`
+If `{spec_file}` is set, add: `Findings written to {story_id_dash}-reviews/{story_id_dash}-R<number>-findings.md and linked Senior Developer Review (AI) action items in {spec_file}.`
 Otherwise add: `Findings are listed above. No story file was provided, so nothing was persisted.`
 
 ### 4. Resolve decision-needed findings

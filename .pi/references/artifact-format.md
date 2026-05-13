@@ -33,15 +33,15 @@ The folder uses the full story slug for readability. Files inside the folder use
   <story_id>-cycle-state.md
   <story_id>-runtime-proof/
 
-  reviews/
+  <story_id>-reviews/
     <story_id>-R1-reviewer-a.md
     <story_id>-R1-reviewer-b.md
     <story_id>-R1-findings.md
 
-  remediation/
+  <story_id>-remediation/
     <story_id>-R3-remediation-brief.md
 
-  validation/
+  <story_id>-validation/
     <story_id>-validation-summary.md
     command-output-*.log
 ```
@@ -87,8 +87,9 @@ Generated stories should include a concise pointer section:
 - Changelog: `<story_id>-story-changelog.md`
 - Orchestrator log: `<story_id>-orchestrator-log.md`
 - Cycle state: `<story_id>-cycle-state.md`
-- Reviews: `reviews/`
-- Validation: `validation/`
+- Reviews: `<story_id>-reviews/`
+- Remediation: `<story_id>-remediation/`
+- Validation: `<story_id>-validation/`
 - Runtime proof: `<story_id>-runtime-proof/`
 ```
 
@@ -116,17 +117,17 @@ Only the parent orchestrator updates this durable state. Runtime status is contr
 
 ## 6. Review artifacts
 
-Raw independent review reports live in `reviews/`:
+Raw independent review reports live in `<story_id>-reviews/`:
 
 ```text
-reviews/<story_id>-R<n>-reviewer-a.md
-reviews/<story_id>-R<n>-reviewer-b.md
+<story_id>-reviews/<story_id>-R<n>-reviewer-a.md
+<story_id>-reviews/<story_id>-R<n>-reviewer-b.md
 ```
 
 Triaged, deduplicated findings for the round live in:
 
 ```text
-reviews/<story_id>-R<n>-findings.md
+<story_id>-reviews/<story_id>-R<n>-findings.md
 ```
 
 `*-findings.md` means parent-validated, deduplicated, actionable findings. It is the normal source of truth for `/dev-story` review follow-up implementation.
@@ -142,8 +143,8 @@ Blocking: true
 AC/Constraint: AC3  
 Location: `src/foo.ts:42`  
 Sources:
-- `reviews/1-2-R2-reviewer-a.md`
-- `reviews/1-2-R2-reviewer-b.md`
+- `1-2-reviews/1-2-R2-reviewer-a.md`
+- `1-2-reviews/1-2-R2-reviewer-b.md`
 
 #### Problem
 ...
@@ -165,13 +166,13 @@ Every unresolved review follow-up written to the story must link to an exact fin
 `Senior Developer Review (AI)` action item:
 
 ```md
-- [ ] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [ ] [R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement [`src/foo.ts:42`] — Source: `1-2-reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 `Tasks / Subtasks -> Review Follow-ups (AI)` dev task:
 
 ```md
-- [ ] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `reviews/1-2-R2-findings.md#F-R2-001`
+- [ ] [AI-Review][R2][HIGH][AC3][F-R2-001] Preserve explicit fresh-context enforcement — Source: `1-2-reviews/1-2-R2-findings.md#F-R2-001`
 ```
 
 Required fields:
@@ -180,7 +181,7 @@ Required fields:
 - severity tag `[HIGH]`, `[MEDIUM]`, or `[LOW]`;
 - AC/constraint tag such as `[AC3]` or `[N/A]`;
 - finding id tag `[F-R<n>-xxx]`;
-- explicit source link `Source: `reviews/<story_id>-R<n>-findings.md#F-R<n>-xxx``.
+- explicit source link `Source: <story_id>-reviews/<story_id>-R<n>-findings.md#F-R<n>-xxx`.
 
 ## 8. Dev-story source-link discovery
 
@@ -197,7 +198,7 @@ Do not scan raw reviewer reports in the normal path.
 
 ## 9. Validation and runtime proof
 
-Verbose validation output belongs under `validation/`. The story records only concise command/pass-fail summaries.
+Verbose validation output belongs under `<story_id>-validation/`. The story records only concise command/pass-fail summaries.
 
 Runtime evidence belongs under `<story_id>-runtime-proof/`.
 

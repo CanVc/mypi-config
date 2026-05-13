@@ -29,7 +29,7 @@ Convert raw independent review reports into one parent-validated, actionable fin
 3. Deduplicate findings by root cause, affected constraint, and location.
 4. Preserve the highest justified severity when merging duplicates.
 5. Assign stable ids in the form `F-R<number>-001`, `F-R<number>-002`, ...
-6. Write `reviews/<story_id>-R<number>-findings.md` using the canonical format.
+6. Write `<story_id>-reviews/<story_id>-R<number>-findings.md` using the canonical format.
 7. Add linked concise action items to `Senior Developer Review (AI) -> Action Items` in the story.
 8. Add linked dev tasks to `Tasks / Subtasks -> Review Follow-ups (AI)` for unresolved decision-needed or blocking patch findings.
 9. Do not copy full raw review prose into the story file.

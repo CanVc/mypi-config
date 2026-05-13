@@ -37,7 +37,7 @@ required_context: fresh
 - Children must not launch subagents. Keep orchestration in the parent session.
 - The implementer follows `.pi/skills/bmad-dev-story/workflow.md` for the target story.
 - Reviewers perform independent `/code-review`-style review passes using `.pi/skills/bmad-code-review` severity and finding conventions, but they do not launch nested reviewers and do not edit files.
-- `findings-triager` deduplicates raw reviewer reports, writes `reviews/{story_id_dash}-R{i}-findings.md`, and writes linked story action items.
+- `findings-triager` deduplicates raw reviewer reports, writes `{story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md`, and writes linked story action items.
 - Parent validates the triaged findings artifact and story links before deciding the next action.
 - Any unresolved blocking `High` or `Medium` finding triggers another implementation iteration unless it requires a human decision.
 - `Low` findings do not block completion; defer them unless the user explicitly asks otherwise.
@@ -67,7 +67,7 @@ required_context: fresh
    - Prefer canonical story file `{story-folder}/{story_id_dash}-story.md`.
    - Fall back to legacy folder story file `{story-folder}/{story_slug}.md` only for migration compatibility.
    - If the user provides a Markdown file, use it directly, set `{story-folder}` to its parent, and derive `story_id_dash`/`story_slug` from the file/folder.
-   - Ignore `reviews/*.md`, `review-*.md`, `*-findings.md`, changelog, orchestrator-log, cycle-state, validation, remediation, and runtime-proof artifacts while discovering the story file.
+   - Ignore `{story_id_dash}-reviews/*.md`, legacy `reviews/*.md`, `review-*.md`, `*-findings.md`, changelog, orchestrator-log, cycle-state, `{story_id_dash}-validation`, legacy `validation`, `{story_id_dash}-remediation`, legacy `remediation`, and runtime-proof artifacts while discovering the story file.
    - HALT if no unique story file can be resolved.
 6. Ensure story-scoped artifact paths exist or can be created:
 
@@ -75,9 +75,9 @@ required_context: fresh
    {story-folder}/{story_id_dash}-story-changelog.md
    {story-folder}/{story_id_dash}-orchestrator-log.md
    {story-folder}/{story_id_dash}-cycle-state.md
-   {story-folder}/reviews/
-   {story-folder}/remediation/
-   {story-folder}/validation/
+   {story-folder}/{story_id_dash}-reviews/
+   {story-folder}/{story_id_dash}-remediation/
+   {story-folder}/{story_id_dash}-validation/
    {story-folder}/{story_id_dash}-runtime-proof/
    ```
 
@@ -101,7 +101,7 @@ required_context: fresh
    ````
 
 9. Create or update `{orchestrator_log_file}` = `{story-folder}/{story_id_dash}-orchestrator-log.md` with current position, routing log, dispatch evidence, escalations, sprint status sync, and recovery notes.
-10. Add or update a concise `## Story Artifacts` section in the story file if missing. Link to changelog, orchestrator log, cycle state, `reviews/`, `validation/`, and runtime proof. Do not embed the full cycle state in the story.
+10. Add or update a concise `## Story Artifacts` section in the story file if missing. Link to changelog, orchestrator log, cycle state, `{story_id_dash}-reviews/`, `{story_id_dash}-remediation/`, `{story_id_dash}-validation/`, and runtime proof. Do not embed the full cycle state in the story.
 
 ## Iteration Loop
 
@@ -139,7 +139,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R{i}"]
     activeAgentId: null
-    outputArtifact: "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-a.md"
+    outputArtifact: "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-a.md"
     routingDecision: null
     cause: null
     recommendedNextAction: null
@@ -154,7 +154,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R{i}"]
     activeAgentId: null
-    outputArtifact: "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-b.md"
+    outputArtifact: "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-b.md"
     routingDecision: null
     cause: null
     recommendedNextAction: null
@@ -166,13 +166,13 @@ tasks:
       type: "artifact-path"
       paths:
         - "{story_file}"
-        - "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-a.md"
-        - "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-b.md"
+        - "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-a.md"
+        - "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-b.md"
         - ".pi/references/artifact-format.md"
         - ".pi/references/workflow-status-codes.md"
     dependsOn: ["review-a-R{i}", "review-b-R{i}"]
     activeAgentId: null
-    outputArtifact: "{story-folder}/reviews/{story_id_dash}-R{i}-findings.md"
+    outputArtifact: "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md"
     routingDecision: null
     cause: null
     recommendedNextAction: null
@@ -199,7 +199,7 @@ Story folder: {story-folder}
 Workflow to follow: .pi/skills/bmad-dev-story/workflow.md
 Artifact format reference: .pi/references/artifact-format.md
 
-Read the story file completely, then read and follow the dev-story workflow. Use the explicit story_path/story_file above; do not auto-select a different story. If this is a review continuation, prioritize unchecked [AI-Review] follow-up tasks. For every [AI-Review] task, follow its Source link to reviews/{story_id_dash}-R*-findings.md and the exact F-* anchor before implementing. Implement only what the story and linked findings require. Update only the story sections permitted by dev-story. Run focused validation and record files changed, tests run, and completion notes.
+Read the story file completely, then read and follow the dev-story workflow. Use the explicit story_path/story_file above; do not auto-select a different story. If this is a review continuation, prioritize unchecked [AI-Review] follow-up tasks. For every [AI-Review] task, follow its Source link to {story_id_dash}-reviews/{story_id_dash}-R*-findings.md and the exact F-* anchor before implementing. Implement only what the story and linked findings require. Update only the story sections permitted by dev-story. Run focused validation and record files changed, tests run, and completion notes.
 
 Do not launch subagents. If you hit a HALT condition, report it with evidence.`
 })
@@ -226,7 +226,7 @@ subagent({
       agent: "reviewer-a",
       durableTaskId: "review-a-R{i}",
       model: "openai-codex/gpt-5.5",
-      output: "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-a.md",
+      output: "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-a.md",
       outputMode: "file-only",
       task: `Run independent BMAD code-review-style pass A for iteration R{i}.
 
@@ -253,7 +253,7 @@ If no findings, state: No findings.`
       agent: "reviewer-b",
       durableTaskId: "review-b-R{i}",
       model: "openai-codex/gpt-5.5",
-      output: "{story-folder}/reviews/{story_id_dash}-R{i}-reviewer-b.md",
+      output: "{story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-b.md",
       outputMode: "file-only",
       task: `Run independent BMAD code-review-style pass B for iteration R{i}.
 
@@ -301,13 +301,13 @@ subagent({
 
 Story file: {story_file}
 Story folder: {story-folder}
-Raw review A: {story-folder}/reviews/{story_id_dash}-R{i}-reviewer-a.md
-Raw review B: {story-folder}/reviews/{story_id_dash}-R{i}-reviewer-b.md
-Findings output: {story-folder}/reviews/{story_id_dash}-R{i}-findings.md
+Raw review A: {story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-a.md
+Raw review B: {story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-reviewer-b.md
+Findings output: {story-folder}/{story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md
 Artifact reference: .pi/references/artifact-format.md
 Status code reference: .pi/references/workflow-status-codes.md
 
-Read the story and valid raw review reports. Normalize, deduplicate, classify, and assign stable ids F-R{i}-001, F-R{i}-002, ... Write the findings artifact using the required format. Then update the story with concise linked action items under Senior Developer Review (AI) and matching linked tasks under Tasks / Subtasks -> Review Follow-ups (AI). Every story action item must include Source: reviews/{story_id_dash}-R{i}-findings.md#F-R{i}-xxx. Do not copy full raw review prose into the story.
+Read the story and valid raw review reports. Normalize, deduplicate, classify, and assign stable ids F-R{i}-001, F-R{i}-002, ... Write the findings artifact using the required format. Then update the story with concise linked action items under Senior Developer Review (AI) and matching linked tasks under Tasks / Subtasks -> Review Follow-ups (AI). Every story action item must include Source: {story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md#F-R{i}-xxx. Do not copy full raw review prose into the story.
 
 Do not launch subagents. If required artifacts are missing or malformed, fail closed and report artifact-invalid.`
 })
@@ -315,9 +315,9 @@ Do not launch subagents. If required artifacts are missing or malformed, fail cl
 
 Parent-validates:
 
-- `reviews/{story_id_dash}-R{i}-findings.md` exists and is readable;
+- `{story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md` exists and is readable;
 - every non-dismissed finding has id, status, severity, classification, blocking flag, problem, required fix, validation requirements, and out-of-scope fields;
-- every unchecked story `[AI-Review]` item for this round has a matching `Source: reviews/{story_id_dash}-R{i}-findings.md#F-R{i}-xxx` link;
+- every unchecked story `[AI-Review]` item for this round has a matching `Source: {story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md#F-R{i}-xxx` link;
 - every unchecked `Senior Developer Review (AI)` action item for this round has the same finding id and source link;
 - no full raw review report was copied into the story.
 
@@ -325,7 +325,7 @@ If valid, set `triage-R{i}` to `completed`. If invalid, set it to `blocked` or `
 
 ### Step 5 — Decide loop or completion
 
-Read `reviews/{story_id_dash}-R{i}-findings.md` and count unresolved findings:
+Read `{story_id_dash}-reviews/{story_id_dash}-R{i}-findings.md` and count unresolved findings:
 
 - `decision_count`: `spec-ambiguity`, `workflow-contract-violation`, `artifact-invalid`, or explicit decision-needed findings that require human input;
 - `blocking_count`: unresolved blocking `High` plus blocking `Medium` findings;
@@ -391,6 +391,6 @@ On max-iteration stop, report:
 - Story: {story_file}
 - Remaining High/Medium findings: <count>
 - Status left as: in-progress
-- Findings artifact: reviews/{story_id_dash}-R{maxIterations}-findings.md
+- Findings artifact: {story_id_dash}-reviews/{story_id_dash}-R{maxIterations}-findings.md
 - Required next action: human review, remediation brief, or manual intervention
 ```

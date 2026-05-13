@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: AC3, AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:318-345`, `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:416-431`, `.pi/npm/node_modules/pi-subagents/src/runs/foreground/subagent-executor.ts:777-779`  
 Sources:
-- `reviews/1-5-R6-reviewer-a.md`
+- `1-5-reviews/1-5-R6-reviewer-a.md`
 
 #### Problem
 Foreground title arbitration can still fall back to a normal active runtime title for same-agent durable-terminal work.
@@ -32,7 +32,7 @@ Blocking: true
 AC/Constraint: AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:646-663`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:859-866`  
 Sources:
-- `reviews/1-5-R6-reviewer-a.md`
+- `1-5-reviews/1-5-R6-reviewer-a.md`
 
 #### Problem
 Async widget rows can still display durable-terminal jobs as running/thinking.
@@ -54,7 +54,7 @@ Blocking: true
 AC/Constraint: AC4, AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:265`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:715`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:763`, `.pi/npm/node_modules/pi-subagents/src/tui/render.ts:965`  
 Sources:
-- `reviews/1-5-R6-reviewer-b.md`
+- `1-5-reviews/1-5-R6-reviewer-b.md`
 
 #### Problem
 Renderer/widget paths can bypass degraded central arbitration for durable IDs that do not resolve to durable task state.

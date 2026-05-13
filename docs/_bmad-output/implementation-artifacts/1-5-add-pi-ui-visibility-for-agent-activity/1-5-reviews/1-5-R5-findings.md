@@ -10,7 +10,7 @@ Blocking: true
 AC/Constraint: AC3, AC4  
 Location: `.pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:269`, `.pi/npm/node_modules/pi-subagents/src/runs/foreground/subagent-executor.ts:777`  
 Sources:
-- `reviews/1-5-R5-reviewer-b.md`
+- `1-5-reviews/1-5-R5-reviewer-b.md`
 
 #### Problem
 Foreground terminal title can still show a normal active activity for a durable-terminal task.
@@ -32,7 +32,7 @@ Blocking: true
 AC/Constraint: AC4, AC5  
 Location: `.pi/npm/node_modules/pi-subagents/src/runs/background/run-status.ts:62-66`, `.pi/npm/node_modules/pi-subagents/src/runs/background/run-status.ts:130-150`, `.pi/npm/node_modules/pi-subagents/src/runs/background/async-status.ts:221-224`, `.pi/npm/node_modules/pi-subagents/src/runs/background/async-status.ts:242-245`  
 Sources:
-- `reviews/1-5-R5-reviewer-a.md`
+- `1-5-reviews/1-5-R5-reviewer-a.md`
 
 #### Problem
 Async status output can still show durable-terminal BMAD work as active.

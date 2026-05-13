@@ -299,7 +299,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
   <critical>📝 CREATE ULTIMATE STORY FILE - The developer's master implementation guide!</critical>
 
   <action>Ensure the story artifact directory exists: {story_artifact_dir}</action>
-  <action>Create story-scoped artifact subdirectories if missing: `{story_artifact_dir}/reviews`, `{story_artifact_dir}/remediation`, `{story_artifact_dir}/validation`, and `{story_artifact_dir}/{{story_id_dash}}-runtime-proof`</action>
+  <action>Create story-scoped artifact subdirectories if missing: `{story_artifact_dir}/{{story_id_dash}}-reviews`, `{story_artifact_dir}/{{story_id_dash}}-remediation`, `{story_artifact_dir}/{{story_id_dash}}-validation`, and `{story_artifact_dir}/{{story_id_dash}}-runtime-proof`</action>
   <action>Create initial sidecar artifacts if missing: `{story_changelog_file}`, `{orchestrator_log_file}`, and `{cycle_state_file}` using the canonical Markdown formats in `.pi/references/artifact-format.md`</action>
   <action>Initialize from template.md:
   {default_output_file}</action>

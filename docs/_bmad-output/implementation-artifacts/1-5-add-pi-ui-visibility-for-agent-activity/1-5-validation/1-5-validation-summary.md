@@ -1,6 +1,6 @@
 # Story 1.5 Validation Summary
 
-This artifact preserves the validation/debug evidence that was previously embedded in the legacy story file. No separate raw command-output logs were present in the scoped story folder during migration.
+This artifact preserves the 1-5-validation/debug evidence that was previously embedded in the legacy story file. No separate raw command-output logs were present in the scoped story folder during migration.
 
 # Debug Log References
 

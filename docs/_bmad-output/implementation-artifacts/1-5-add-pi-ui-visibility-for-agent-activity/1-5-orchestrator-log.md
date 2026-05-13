@@ -6,18 +6,18 @@ Migrated from the legacy flat story/review artifact layout to the canonical Stor
 
 ## Canonical Review Artifact Mapping
 
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R1-reviewer-a-output.md` -> `reviews/1-5-R1-reviewer-a.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R1-reviewer-b-output.md` -> `reviews/1-5-R1-reviewer-b.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R2-reviewer-a-output.md` -> `reviews/1-5-R2-reviewer-a.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R2-reviewer-b-output.md` -> `reviews/1-5-R2-reviewer-b.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R3-reviewer-a-output.md` -> `reviews/1-5-R3-reviewer-a.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R3-reviewer-b-output.md` -> `reviews/1-5-R3-reviewer-b.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R4-reviewer-a-output.md` -> `reviews/1-5-R4-reviewer-a.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R4-reviewer-b-output.md` -> `reviews/1-5-R4-reviewer-b.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R5-reviewer-a-output.md` -> `reviews/1-5-R5-reviewer-a.md`
-- `review-1-5-add-pi-ui-visibility-for-agent-activity-R5-reviewer-b-output.md` -> `reviews/1-5-R5-reviewer-b.md`
-- `review-1-5-central-arbitration-targeted-reviewer-a-output.md` -> `reviews/1-5-R6-reviewer-a.md`
-- `review-1-5-central-arbitration-targeted-reviewer-b-output.md` -> `reviews/1-5-R6-reviewer-b.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R1-reviewer-a-output.md` -> `1-5-reviews/1-5-R1-reviewer-a.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R1-reviewer-b-output.md` -> `1-5-reviews/1-5-R1-reviewer-b.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R2-reviewer-a-output.md` -> `1-5-reviews/1-5-R2-reviewer-a.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R2-reviewer-b-output.md` -> `1-5-reviews/1-5-R2-reviewer-b.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R3-reviewer-a-output.md` -> `1-5-reviews/1-5-R3-reviewer-a.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R3-reviewer-b-output.md` -> `1-5-reviews/1-5-R3-reviewer-b.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R4-reviewer-a-output.md` -> `1-5-reviews/1-5-R4-reviewer-a.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R4-reviewer-b-output.md` -> `1-5-reviews/1-5-R4-reviewer-b.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R5-reviewer-a-output.md` -> `1-5-reviews/1-5-R5-reviewer-a.md`
+- `review-1-5-add-pi-ui-visibility-for-agent-activity-R5-reviewer-b-output.md` -> `1-5-reviews/1-5-R5-reviewer-b.md`
+- `review-1-5-central-arbitration-targeted-reviewer-a-output.md` -> `1-5-reviews/1-5-R6-reviewer-a.md`
+- `review-1-5-central-arbitration-targeted-reviewer-b-output.md` -> `1-5-reviews/1-5-R6-reviewer-b.md`
 
 ## BMAD Dev Cycle (AI)
 
@@ -26,7 +26,7 @@ Migrated from the legacy flat story/review artifact layout to the canonical Stor
 - Current iteration: 5
 - Dev agent: implementer (`openai-codex/gpt-5.5`)
 - Review agents: reviewer-a, reviewer-b (`openai-codex/gpt-5.5`)
-- Reviewer output artifacts: `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-b.md`
+- Reviewer output artifacts: `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-b.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-a.md`, `docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-b.md`
 - Severity counts: High 1, Medium 1, Low 0
 - Deduped finding count: 2
 - Next action: HALT — five-iteration maximum reached with 2 remaining High/Medium findings.
@@ -60,7 +60,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R1"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-a.md"
     routingDecision: "dev-R1 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R1 is eligible."
     cause: null
     recommendedNextAction: null
@@ -75,7 +75,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R1"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R1-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R1-reviewer-b.md"
     routingDecision: "dev-R1 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R1 is eligible."
     cause: null
     recommendedNextAction: null
@@ -105,7 +105,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R2"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-a.md"
     routingDecision: "dev-R2 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R2 is eligible."
     cause: null
     recommendedNextAction: null
@@ -120,7 +120,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R2"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R2-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R2-reviewer-b.md"
     routingDecision: "dev-R2 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R2 is eligible."
     cause: null
     recommendedNextAction: null
@@ -150,7 +150,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R3"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-a.md"
     routingDecision: "dev-R3 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R3 is eligible."
     cause: null
     recommendedNextAction: null
@@ -165,7 +165,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R3"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R3-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R3-reviewer-b.md"
     routingDecision: "dev-R3 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R3 is eligible."
     cause: null
     recommendedNextAction: null
@@ -195,7 +195,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R4"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-a.md"
     routingDecision: "dev-R4 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R4 is eligible."
     cause: null
     recommendedNextAction: null
@@ -210,7 +210,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R4"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R4-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R4-reviewer-b.md"
     routingDecision: "dev-R4 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R4 is eligible."
     cause: null
     recommendedNextAction: null
@@ -240,7 +240,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R5"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-a.md"
     routingDecision: "dev-R5 completed and parent validation accepted story artifact/readability and validation evidence; review-a-R5 is eligible."
     cause: null
     recommendedNextAction: null
@@ -255,7 +255,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["dev-R5"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R5-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R5-reviewer-b.md"
     routingDecision: "dev-R5 completed and parent validation accepted story artifact/readability and validation evidence; review-b-R5 is eligible."
     cause: null
     recommendedNextAction: null
@@ -299,7 +299,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["targeted-dev-central-arbitration"]
     activeAgentId: "reviewer-a"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R6-reviewer-a.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R6-reviewer-a.md"
     routingDecision: "targeted-dev-central-arbitration completed and parent validation accepted story artifact/readability and validation evidence; targeted-review-a-central-arbitration is eligible."
     cause: null
     recommendedNextAction: null
@@ -314,7 +314,7 @@ tasks:
         - ".pi/skills/bmad-code-review/workflow.md"
     dependsOn: ["targeted-dev-central-arbitration"]
     activeAgentId: "reviewer-b"
-    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/reviews/1-5-R6-reviewer-b.md"
+    outputArtifact: "docs/_bmad-output/implementation-artifacts/1-5-add-pi-ui-visibility-for-agent-activity/1-5-reviews/1-5-R6-reviewer-b.md"
     routingDecision: "targeted-dev-central-arbitration completed and parent validation accepted story artifact/readability and validation evidence; targeted-review-b-central-arbitration is eligible."
     cause: null
     recommendedNextAction: null
