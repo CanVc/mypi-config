@@ -1,0 +1,7 @@
+On va mettre en place / reprendre la story docs/_bmad-output/implementation-artifacts/1-3-enforce-fresh-context-session-policy
+Tu vas monter une équipe d'agents :
+- 1 agent qui implémente sur le modèle GPT-5.5 qui exécute le workflow /dev-story
+- 2 agents reviewers  sur le modèle GPT-5.5 qui éxécutent le workflow /code-review
+L'agent implémente, ensuite les deux autres agents font 2 reviews distinctes en parrallèle. Tu compulses et dédouble les findings dans le fichier de la story.
+Si findings >= MEDIUM tu relances l'agent dev pour un tour, puis les 2 reviewers. 5 itérations maximum. Si plus de findings MEDIUM+ tu classes la story DONE.
+Sinon tu me préviens si tu atteins 5 itérations.
