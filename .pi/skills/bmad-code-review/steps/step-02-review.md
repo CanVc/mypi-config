@@ -11,6 +11,7 @@ failed_layers: '' # set at runtime: comma-separated list of layers that failed o
 - The Edge Case Hunter subagent receives diff and project read access.
 - The Acceptance Auditor subagent receives diff, spec, and context docs.
 - Every review subagent MUST attach a severity to each finding: `High`, `Medium`, or `Low`.
+- **Task-State Gate:** Parallel review fan-out MUST follow `.pi/skills/bmad-orchestrator/SKILL.md` `Task Routing and Task List State`. Maintain an orchestrator-managed task list in the known story/spec/review Markdown artifact, or in a named review-run Markdown artifact under `{review_artifact_dir}` when no editable story/spec artifact exists. Before dispatch, create one task per review layer, validate dependencies/context, and write each selected task to `in-progress` with `activeAgentId`. After parent validation, write each layer task to `completed`, or to `blocked` or `failed` with `cause` and `recommendedNextAction`; do not dispatch dependent tasks or triage work that depends on a blocked/failed layer's output.
 - Severity meanings:
   - `High` -- blocks completion: acceptance criteria violation, regression, data loss, security/privacy issue, or unsafe workflow state.
   - `Medium` -- potentially blocks completion if it affects acceptance criteria, security, regression risk, or maintainability needed now.
@@ -43,7 +44,7 @@ failed_layers: '' # set at runtime: comma-separated list of layers that failed o
    - **Acceptance Auditor** (only if `{review_mode}` = `"full"`) — receives `{diff_output}`, the content of the file at `{spec_file}`, and any loaded context docs. Its prompt:
      > You are an Acceptance Auditor. Review this diff against the spec and context docs. Check for: violations of acceptance criteria, deviations from spec intent, missing implementation of specified behavior, contradictions between spec constraints and actual code. Output findings as a Markdown list. Each finding: `Severity: High|Medium|Low`, one-line title, which AC/constraint it violates, and evidence from the diff.
 
-3. **Subagent failure handling**: If any subagent fails, times out, or returns empty results, append the layer name to `{failed_layers}` (comma-separated) and proceed with findings from the remaining layers.
+3. **Subagent failure handling**: If any subagent fails, times out, or returns empty results, append the layer name to `{failed_layers}` (comma-separated), update that layer's orchestrator-managed task list entry to `blocked` or `failed` with `cause` and `recommendedNextAction`, and proceed only with findings from remaining `completed` independent layers. Do not dispatch dependent tasks or use the blocked/failed layer as context.
 
 4. Collect all findings from the completed layers. If reviewer output files or manual command transcripts are persisted for a known story, ensure `{review_artifact_dir}` is `{implementation_artifacts}/{story_key}`, create that directory if needed, and write them there using `review-{{story_key}}-<reviewer-role>-output.md`; do not write story-specific review artifacts directly at the implementation-artifacts root.
 

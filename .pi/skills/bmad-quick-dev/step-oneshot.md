@@ -8,6 +8,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - NEVER auto-push.
+- **Task-State Gate:** The one-shot review sub-agent launch MUST follow `.pi/skills/bmad-orchestrator/SKILL.md` `Task Routing and Task List State`. Maintain an orchestrator-managed task list in a named one-shot run Markdown artifact under `{implementation_artifacts}` until `{spec_file}` is written, then reference that state from the spec trace. Before dispatch, validate context and write the review task to `in-progress` with `activeAgentId`; after parent validation write it to `completed`, or to `blocked` or `failed` with `cause` and `recommendedNextAction`; do not dispatch dependent tasks after a blocked/failed task.
 
 ## INSTRUCTIONS
 

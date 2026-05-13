@@ -49,7 +49,7 @@ review_artifact_dir: '' # set at runtime; story folder when a story/spec is know
    Never ask extra questions beyond what the cascade prescribes. If a tier above already identified the target, skip the remaining tiers and proceed to instruction 3 (construct diff).
 
 2. HALT. Ask the user: **What do you want to review?** Present these options:
-   - **Uncommitted changes** (staged + unstaged)
+   - **Uncommitted changes** (staged + unstaged + untracked)
    - **Staged changes only**
    - **Branch diff** vs a base branch (ask which base branch)
    - **Specific commit range** (ask for the range)
@@ -57,7 +57,7 @@ review_artifact_dir: '' # set at runtime; story folder when a story/spec is know
 
 3. Construct `{diff_output}` from the chosen source.
    - For **staged changes only**: run `git diff --cached`.
-   - For **uncommitted changes** (staged + unstaged): run `git diff HEAD`.
+   - For **uncommitted changes** (staged + unstaged + untracked): construct a tracked and untracked review delta. Run `git diff HEAD` for tracked changes, then run `git ls-files --others --exclude-standard` and append each untracked file with `git diff --no-index /dev/null <path>` so new tests, story-scoped artifacts, and generated review/dev reports are visible to reviewers. Do not rely on bare `git diff HEAD` as the full review delta when untracked files exist.
    - For **branch diff**: verify the base branch exists before running `git diff`. If it does not exist, HALT and ask the user for a valid branch.
    - For **commit range**: verify the range resolves. If it does not, HALT and ask the user for a valid range.
    - For **provided diff**: validate the content is non-empty and parseable as a unified diff. If it is not parseable, HALT and ask the user to provide a valid diff.

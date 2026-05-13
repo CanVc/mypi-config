@@ -62,6 +62,75 @@ Fresh-context construction for formal BMAD dispatches:
 - Continue verifying every required artifact path exists and is readable before dispatch.
 - Existing `inheritProjectContext: true` agent frontmatter may provide shared project rules, but story/review truth must come from explicit task text and named artifacts.
 
+## Task Routing and Task List State
+
+Formal BMAD parent workflows that sequence or fan out child agents MUST maintain a builder-facing task list as durable Markdown state. This task list is owned by the parent orchestrator; child output and `pi-subagents` runtime status are control-plane evidence until the parent validates them and writes durable state.
+
+### Durable State Location
+
+- Write and read the orchestrator-managed task list in the relevant BMAD story/spec/run artifact when one exists: the story Dev Agent Record, review artifact, quick-dev spec, or workflow run artifact selected by the active workflow.
+- If no story/spec/run artifact exists, create and name a Markdown artifact for the active workflow run before dispatch, then use that named Markdown artifact as the durable task-list source of truth.
+- Do not treat hidden runtime memory, `progress.md`, or background `status.json` as sufficient builder-facing task-list state.
+
+### Task Contract
+
+Every orchestrator-managed task record MUST include these required fields: `taskId`, `title`, `targetAgent`, `status`, and `contextSource`.
+
+Task records MAY include these optional fields when applicable: `dependsOn`, `activeAgentId`, `outputArtifact`, `cause`, `recommendedNextAction`, and `routingDecision`.
+
+Minimum durable Markdown representation:
+
+```yaml
+tasks:
+  - taskId: "task-01"
+    title: "Implement approved story changes"
+    targetAgent: "implementer"
+    status: "pending"
+    contextSource:
+      type: "artifact-path"
+      paths:
+        - "docs/_bmad-output/implementation-artifacts/<story-key>/<story-key>.md"
+    dependsOn: []
+    activeAgentId: null
+    outputArtifact: null
+    routingDecision: null
+    cause: null
+    recommendedNextAction: null
+```
+
+Use exactly this fixed builder-facing status vocabulary:
+
+- `pending` — task exists and is not yet dispatched; it may still be waiting for dependencies or readable context.
+- `in-progress` — parent has selected the task, written the durable state update, and is dispatching or waiting for the target child agent.
+- `completed` — child completed successfully and parent validation accepted the control-plane result or artifact state.
+- `blocked` — automatic continuation is unsafe but the condition may be recoverable by human action or a later explicit retry policy.
+- `failed` — task execution failed in a way that ends the current automated run.
+
+Runtime/package statuses such as `running`, `complete`, `paused`, or `detached` are control-plane details. They MUST be mapped into the builder-facing vocabulary before durable Markdown state is written; for example, runtime `running` maps to `in-progress`, `complete` maps to `completed` only after parent validation, and `paused` or `detached` maps to `blocked` unless the active workflow documents a safer narrower mapping.
+
+### Lifecycle Routing Rules
+
+- Before a formal dispatch, validate that the task status is `pending`, all `dependsOn` task identifiers are `completed`, the requested/list-validated canonical `targetAgent` exists, and every declared `contextSource` is present and readable.
+- Policy rejection happens before any task status change. A rejected session request may record an optional debug note only if the active workflow permits it, but rejected requests must not become `in-progress`.
+- Immediately before dispatch, update the durable task list to `in-progress` and record `activeAgentId` using the requested/list-validated canonical agent identifier. Then launch the child through the active fresh-session dispatch policy.
+- After successful child completion and parent validation, update the task to `completed` and record the control-plane result reference or output artifact path in `outputArtifact`.
+- If a child fails, times out, returns empty/ambiguous output, violates session policy, produces an unclassifiable state, has missing/unreadable context, or cannot be mapped safely from runtime status, mark the task `blocked` or `failed` with `cause` and `recommendedNextAction`; do not dispatch later dependent tasks.
+- Never advance a dependent task based only on raw child text or runtime status. Parent validation decides whether durable state changes.
+
+### Deterministic Handoffs
+
+- One task's result may become the next task's context only through an explicit declared context source: direct task text, an output artifact path, or a named `pi-subagents` output file reference.
+- Preserve artifact-first behavior for formal workflows: pass artifact paths/read directives rather than parent-side summaries whenever a canonical artifact exists.
+- Before routing the next eligible task, record `routingDecision` with why the next task became eligible, which dependencies are `completed`, and which prior output/context source it consumed.
+- Keep child output as control-plane evidence until the parent writes validated durable state back to Markdown.
+- Do not pass previous child output to the next agent as a vague summary when an artifact path or saved output file exists.
+
+### Active Workflow Integration
+
+Active BMAD workflow steps that launch or fan out sub-agents MUST apply this `Task Routing and Task List State` contract locally; a centralized contract does not permit direct dispatch paths to bypass durable task-state updates. This includes `bmad-code-review/steps/step-02-review.md` and quick-dev context-discovery, planning, implementation, review, and one-shot review steps.
+
+Each active dispatch step must create or update the orchestrator-managed task list in the current story/spec/review/run Markdown artifact before dispatch, move the selected task to `in-progress` with `activeAgentId`, then write `completed` after parent validation or `blocked` or `failed` with `cause` and `recommendedNextAction` for failed, empty, ambiguous, timed-out, policy-invalid, or unclassifiable outcomes. Dependent tasks must not dispatch after a task is `blocked` or `failed`; independent parallel siblings may continue only if the active workflow records each sibling's final task state and does not use a failed sibling as context.
+
 ## Delegation Defaults
 
 Map BMAD delegation intent onto `pi-subagents` parameters as follows:
@@ -177,6 +246,9 @@ Parent next-action rules:
 - Treat child completion output as control-plane output for the parent to inspect and synthesize.
 - Do not treat child output as durable BMAD workflow truth when formal artifacts are in use.
 - Write durable workflow decisions, task progress, and review outcomes back into the appropriate Markdown artifacts only after parent validation.
-- Timeout, child error, interruption, needs-attention state, empty/ambiguous result, or unavailable status must fail closed before updating Markdown artifacts or workflow state transitions. Record only a debug note if the workflow allows it, then retry, resume/status-check, interrupt, or ask the user for guidance.
-- Unknown-agent failures must fail closed. If `pi-subagents` returns an unknown-agent error without identifiers inline, immediately list available agents through `subagent({ action: "list", agentScope: "both" })` (or the equivalent scoped discovery command selected by the active workflow), then surface the available identifiers so the parent can choose a valid agent.
+- Timeout, child error, interruption, needs-attention state, empty/ambiguous result, or unavailable status must fail closed for success transitions: do not treat the child result as accepted. Do not mark the task `completed`, and do not dispatch dependent tasks.
+- For non-orchestrator-managed fatal outcomes, fail closed before updating Markdown artifacts or workflow state transitions except for an optional debug note when the workflow allows it.
+- For orchestrator-managed tasks that already have durable task records, failed/ambiguous result handling includes a required Markdown state update after parent classification: write the durable task state as `blocked` or `failed` with `cause` and `recommendedNextAction`, then stop dependent routing unless an explicit human or workflow recovery policy authorizes another attempt.
+- Policy rejection remains pre-dispatch: reject before any task status change, except an optional debug note when the active workflow permits it. Rejected session requests must not become `in-progress`.
+- Unknown-agent failures must fail closed for child launch. If the invalid agent was part of an orchestrator-managed task, classify the task as `blocked` or `failed` with `cause` and `recommendedNextAction` after listing valid agents; otherwise, if `pi-subagents` returns an unknown-agent error without identifiers inline, immediately list available agents through `subagent({ action: "list", agentScope: "both" })` (or the equivalent scoped discovery command selected by the active workflow), then surface the available identifiers so the parent can choose a valid agent.
 - Unknown-agent recovery evidence must be reproducible: record the refused identifier, the fail-closed error text, the parent follow-up discovery command (`subagent({ action: "list", agentScope: "both" })`), and the available identifiers surfaced to the user or artifact.

@@ -9,6 +9,7 @@ specLoopIteration: 1
 
 - YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
 - Review subagents are always fresh under the centralized BMAD Session Policy: use explicit `context: "fresh"`, with no fork/resume.
+- **Task-State Gate:** Any review sub-agent fan-out MUST follow `.pi/skills/bmad-orchestrator/SKILL.md` `Task Routing and Task List State`. Maintain an orchestrator-managed task list in `{spec_file}`. before dispatch, create one task per review role, validate context/dependencies, and write each selected task to `in-progress` with `activeAgentId`; after parent validation write each task to `completed`, or to `blocked` or `failed` with `cause` and `recommendedNextAction`; do not dispatch dependent tasks or classify work that depends on a blocked/failed layer's output.
 
 ## INSTRUCTIONS
 
@@ -24,7 +25,7 @@ Do NOT `git add` anything — this is read-only inspection.
 
 ### Review
 
-Launch three subagents with explicit `context: "fresh"` and no fork/resume. Fresh review prompts must include only the review task and explicitly named diff/spec/context artifacts; do not append parent conversation history, prior child output, or reviewer transcripts. If no sub-agents are available, generate three review prompt files in `{implementation_artifacts}` — one per reviewer role below — and HALT. Ask the human to run each in a separate session (ideally a different LLM) and paste back the findings.
+Launch three subagents with explicit `context: "fresh"` and no fork/resume. Fresh review prompts must include only the review task and explicitly named diff/spec/context artifacts; do not append parent conversation history, prior child output, or reviewer transcripts. If no sub-agents are available, generate three review prompt files in `{implementation_artifacts}` — one per reviewer role below — and HALT. Ask the human to run each in a separate session (ideally a different LLM) and paste back the findings. For any failed, timed-out, empty, or ambiguous review result, update that role's task to `blocked` or `failed` with `cause` and `recommendedNextAction` before continuing with completed independent review outputs.
 
 - **Blind hunter** — receives `{diff_output}` only. No spec, no context docs, no project access. Invoke via the `bmad-review-adversarial-general` skill.
 - **Edge case hunter** — receives `{diff_output}` and read access to the project. Invoke via the `bmad-review-edge-case-hunter` skill.

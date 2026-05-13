@@ -11,6 +11,7 @@ deferred_work_file: '{implementation_artifacts}/deferred-work.md'
 - Quick-dev planning investigation sub-agent/task launches are formal BMAD dispatches and MUST follow the centralized BMAD Session Policy: validate before dispatch and before any `{spec_file}` artifact write, pass explicit `context: "fresh"`, and allow no fork/resume.
 - If a planning investigation launch request omits context, requests `context: "fork"`, or requests `action: "resume"`, HALT before dispatch and before writing `{spec_file}`. Report the requested investigation agent/task, requested mode, and violated policy.
 - Fresh planning investigation prompts are artifact-first: include only the task text and explicitly named artifact paths/read directives; they must not append parent conversation history, previous runtime transcript, child output history, or reviewer transcripts.
+- **Task-State Gate:** Any planning investigation sub-agent/task launch MUST follow `.pi/skills/bmad-orchestrator/SKILL.md` `Task Routing and Task List State`. Maintain an orchestrator-managed task list in `{spec_file}` when it exists, or in a named planning-run Markdown artifact under `{implementation_artifacts}` before `{spec_file}` is created. Before dispatch, validate context and write the task to `in-progress` with `activeAgentId`; after parent validation write it to `completed`, or to `blocked` or `failed` with `cause` and `recommendedNextAction`; do not dispatch dependent tasks after a blocked/failed task.
 
 ## INSTRUCTIONS
 
