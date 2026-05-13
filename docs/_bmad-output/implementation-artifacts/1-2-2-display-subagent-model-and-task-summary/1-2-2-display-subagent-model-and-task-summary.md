@@ -1,6 +1,6 @@
 # Story 1.2.2: Display Subagent Model and Task Summary
 
-Status: ready-for-dev
+Status: done
 
 <!-- Created from user request after Story 1.2.1: add per-subagent model name and a short current-task summary to pi-subagents visibility surfaces. -->
 
@@ -23,32 +23,38 @@ so that I can quickly understand which model is doing what across foreground, pa
 
 ## Tasks / Subtasks
 
-- [ ] Confirm target display surfaces and runtime data flow. (AC: 1, 2, 5)
-  - [ ] Inspect `pi-subagents` foreground renderers, async widget renderers, status formatters, and result details types.
-  - [ ] Identify exactly where model is already available and where task text is currently lost or too noisy.
-  - [ ] Record any intentionally unchanged surfaces in Dev Agent Record if they are out of scope.
-- [ ] Add task-summary and model-display data propagation. (AC: 1, 2, 3, 4, 5)
-  - [ ] Add optional task summary fields to shared result/progress/async status types without renaming existing fields.
-  - [ ] Add or reuse a helper that generates concise task summaries from clean task text and strips injected instruction noise defensively.
-  - [ ] Propagate clean task summaries through foreground single, parallel, and chain execution before read/write/progress/output/fork instructions are injected.
-  - [ ] Propagate task summaries through async single, async parallel, async chain runner steps, `status.json`, async job tracker, and async status summaries.
-  - [ ] Preserve model/fallback metadata already captured by foreground and async execution, and add model to running progress where needed for display.
-- [ ] Update TUI/status rendering. (AC: 1, 2, 4)
-  - [ ] Show model and task summary in foreground compact single-result rendering.
-  - [ ] Show model and task summary in foreground compact multi-result rows for parallel and chain runs.
-  - [ ] Keep expanded foreground renderers useful: full task remains available where appropriate, while summary/model are easy to scan.
-  - [ ] Show model and task summary in async widget rows, including active parallel group and chain step views.
-  - [ ] Show model and task summary in `subagent({ action: "status" })` active-run and detailed status outputs.
-- [ ] Make the change durable as a project patch. (AC: 6)
-  - [ ] Modify the installed package source only as implementation workspace material.
-  - [ ] Generate `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch` relative to `.pi/npm/node_modules/pi-subagents/`.
-  - [ ] Verify `bash .pi/install-packages.sh --patch` applies or reports the patch as already applied.
-  - [ ] Ensure the new patch coexists with the existing project-agent override patch.
-- [ ] Add regression validation. (AC: 5, 6, 7, 8)
-  - [ ] Add focused tests or static validation that prove the durable patch contains optional task-summary/model-display propagation and renderer/status changes.
-  - [ ] Run `python3 -m unittest discover -s tests`.
-  - [ ] Run `git diff --check`.
-  - [ ] Run a root-artifact cleanliness check proving no story-specific review files were written directly under `docs/_bmad-output/implementation-artifacts`.
+- [x] Confirm target display surfaces and runtime data flow. (AC: 1, 2, 5)
+  - [x] Inspect `pi-subagents` foreground renderers, async widget renderers, status formatters, and result details types.
+  - [x] Identify exactly where model is already available and where task text is currently lost or too noisy.
+  - [x] Record any intentionally unchanged surfaces in Dev Agent Record if they are out of scope.
+- [x] Add task-summary and model-display data propagation. (AC: 1, 2, 3, 4, 5)
+  - [x] Add optional task summary fields to shared result/progress/async status types without renaming existing fields.
+  - [x] Add or reuse a helper that generates concise task summaries from clean task text and strips injected instruction noise defensively.
+  - [x] Propagate clean task summaries through foreground single, parallel, and chain execution before read/write/progress/output/fork instructions are injected.
+  - [x] Propagate task summaries through async single, async parallel, async chain runner steps, `status.json`, async job tracker, and async status summaries.
+  - [x] Preserve model/fallback metadata already captured by foreground and async execution, and add model to running progress where needed for display.
+- [x] Update TUI/status rendering. (AC: 1, 2, 4)
+  - [x] Show model and task summary in foreground compact single-result rendering.
+  - [x] Show model and task summary in foreground compact multi-result rows for parallel and chain runs.
+  - [x] Keep expanded foreground renderers useful: full task remains available where appropriate, while summary/model are easy to scan.
+  - [x] Show model and task summary in async widget rows, including active parallel group and chain step views.
+  - [x] Show model and task summary in `subagent({ action: "status" })` active-run and detailed status outputs.
+- [x] Make the change durable as a project patch. (AC: 6)
+  - [x] Modify the installed package source only as implementation workspace material.
+  - [x] Generate `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch` relative to `.pi/npm/node_modules/pi-subagents/`.
+  - [x] Verify `bash .pi/install-packages.sh --patch` applies or reports the patch as already applied.
+  - [x] Ensure the new patch coexists with the existing project-agent override patch.
+- [x] Add regression validation. (AC: 5, 6, 7, 8)
+  - [x] Add focused tests or static validation that prove the durable patch contains optional task-summary/model-display propagation and renderer/status changes.
+  - [x] Run `python3 -m unittest discover -s tests`.
+  - [x] Run `git diff --check`.
+  - [x] Run a root-artifact cleanliness check proving no story-specific review files were written directly under `docs/_bmad-output/implementation-artifacts`.
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][MEDIUM][AC1] Foreground running parallel/chain rows must render task summaries, not only completed rows; remove the `!rRunning` summary gate in `.pi/npm/node_modules/pi-subagents/src/tui/render.ts` and keep activity/status visible alongside the summary.
+- [x] [AI-Review][MEDIUM][AC3, AC7] Foreground chain summaries must be derived from the clean assigned task instead of injected/expanded `{previous}` task text; thread a clean `taskSummary`/override through foreground chain execution into `runSync`, extend stripping for actual progress/output injected forms such as `Create and maintain progress at:` / `Update progress at:`, and add focused regression coverage for these edge cases.
+- [x] [AI-Review][MEDIUM][AC3, AC7] Second-pass review found foreground chain summaries still expand `{previous}` before summary generation; compute a separate summary source from the assigned/default chain template before `{previous}` replacement for both sequential and parallel foreground chain paths, pass that summary override to `runSync`, and add behavioral regression coverage for default/explicit `{previous}` chain steps.
 
 ## Dev Notes
 
@@ -122,33 +128,80 @@ Story 1.2.1 also showed the preferred validation pattern for local workflow chan
 
 At story creation time, the working tree already contained unrelated user changes that appear to move Story 1.2 artifacts from `1-2-add-agent-definitions-and-model-routing-contract/` to `1-2-0-add-agent-definitions-and-model-routing-contract/`. Do not revert or overwrite those changes unless explicitly instructed.
 
+## Senior Developer Review (AI)
+
+### Review Date
+
+2026-05-13
+
+### Review Outcome
+
+Approved — initial review found 2 Medium blockers and second-pass review found 1 remaining Medium blocker; all Medium findings were fixed by the third dev iteration. Final review found no Medium+ blockers.
+
+### Severity Breakdown
+
+- High: 0
+- Medium: 3 total (0 remaining open)
+- Low: 1 final bookkeeping concern addressed without another dev iteration
+
+### Action Items
+
+- [x] [MEDIUM][AC1] Foreground running parallel/chain rows omit task summaries because `.pi/npm/node_modules/pi-subagents/src/tui/render.ts` renders `taskSummary` only when `!rRunning`; running rows must show the concise task summary as required by AC1.
+- [x] [MEDIUM][AC3, AC7] Foreground chain summaries can be generated from injected/expanded task text because clean task text is computed in `chain-execution.ts` but not threaded into `runSync`; actual injected progress/output instructions can also summarize as noise (`---`). Use a clean summary override and add focused regression coverage.
+- [x] [MEDIUM][AC3, AC7] Second-pass review: foreground chain summaries still use expanded `{previous}` output because `chain-execution.ts` computes the summary source after replacing `{previous}` with prior output. Compute summary input from the assigned/default template before replacement and add regression coverage for default/explicit `{previous}` chain tasks.
+
+### Reviewer Evidence
+
+- Reviewer A: `render.ts:944-951` gates task summaries behind `!rRunning`; `chain-execution.ts:192-197,227-235,732-737,776-783` computes clean task text but calls `runSync` with mutated task strings; `execution.ts:166-197` builds summaries from the received mutated task.
+- Reviewer B: confirmed the same two Medium findings and observed `buildTaskSummary("\n\n---\nCreate and maintain progress at: ...")` returns `"---"`, proving an AC3 injected-noise gap.
+- Validation during review: `python3 -m unittest discover -s tests` / equivalent quiet run passed, `git diff --check` passed, root artifact check passed, patch reverse/apply checks passed.
+- Second-pass Reviewer A approved with no findings after verifying running-row rendering, clean summary override plumbing, injected-noise stripping, durable patch contents, and validations.
+- Second-pass Reviewer B found one remaining Medium: `settings.ts:157-167` defaults later chain tasks to `{previous}`, but `chain-execution.ts:192-197` and `:733-737` replace `{previous}` before building `taskSummaryOverride`; expanded prior output can still leak as the next task summary. Literal `{previous}` already maps to `continue from previous output`, so the fix should preserve/neutralize the template before replacement.
+- Final review: no Medium+ blockers remain. Reviewer B approved with no findings; Reviewer A approved with one Low bookkeeping concern, addressed by setting story/sprint status to `done` and refreshing stale completion wording.
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-N/A - create-story workflow generated this story artifact.
+Claude Sonnet 4 (claude-sonnet-4-20250514)
 
 ### Debug Log References
 
-- Loaded `_bmad/bmm/config.yaml` and resolved communication/document languages plus planning/implementation artifact roots.
-- Loaded `sprint-status.yaml`, `epics.md`, `architecture.md`, create-story template/checklist, previous Story 1.2.1, and a scout subagent context pass over `pi-subagents` runtime files.
-- Removed transient scout output `context.md` from the repository root after using its findings; it was not a durable story artifact.
-- Validation: confirmed canonical folder story path exists and legacy flat story path does not exist.
-- Validation: `find docs/_bmad-output/implementation-artifacts -maxdepth 1 -type f -name 'review-*.md' -print` returned no root review artifacts.
-- Validation: `git diff --check` returned no issues.
+- Inspected the BMAD review findings against `.pi/npm/node_modules/pi-subagents/src/tui/render.ts`, `shared/formatters.ts`, `runs/foreground/execution.ts`, and `runs/foreground/chain-execution.ts` before making follow-up changes.
+- Updated foreground multi-row rendering to keep task summaries visible for running rows and to fall back to the resolved `rProg?.taskSummary` when progress is sourced from the aggregate progress array.
+- Extended `buildTaskSummary()` stripping to cover labeled injected output forms such as `**Output:** Write your findings to: ...` in addition to progress-only injected suffixes.
+- Regenerated `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch` against a clean `pi-subagents@0.24.2` install with the project-agent override patch applied as the patch baseline.
+- Second-pass fix: foreground chain summaries were still derived from task text after `{previous}` replacement with actual prior output. Added `summarySource` computation in both sequential and parallel chain paths in `chain-execution.ts`: the template is processed with `{task}` and `{chain_dir}` replaced first, then `{previous}` is replaced with neutral `"continue from previous output"` text for summary purposes, before the actual `{previous}` → prior-output replacement produces the execution task string.
+- Updated existing test assertion from `buildTaskSummary(cleanTask)` to `buildTaskSummary(summarySource)` to match the new code.
+- Added new `TestReviewFollowUpChainSummarySourceBeforePrevious` test class with 6 tests covering: sequential chain uses summarySource, parallel chain uses summarySource, summarySource replaces `{previous}` neutrally, cleanTask still used for recordRun, default `{previous}`-only template produces neutral summary, and explicit `{previous}` in mixed template.
+- Validation: `python3 -m unittest discover -s tests` — 151 tests OK.
+- Validation: `git diff --check` — no issues.
+- Validation: `find docs/_bmad-output/implementation-artifacts -maxdepth 1 -type f -name 'review-*.md' -print` — no root review artifacts.
+- Validation: `bash .pi/install-packages.sh --patch` — both patches already applied successfully.
+- Validation: patch reverse/apply dry-run verification for `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch` — OK.
 
 ### Completion Notes List
 
-- Created story folder and story file using the v1 story-scoped convention.
-- Created Story 1.2.2 from the builder's explicit request and prior analysis context because the planning epics did not yet contain a dedicated 1.2.2 entry.
-- Added implementation guidance for foreground, async, status, renderer, type, and durable patch paths.
-- Updated `sprint-status.yaml` to track Story 1.2.2 as `ready-for-dev`.
+- Completed the two BMAD Medium follow-ups without expanding scope beyond the reviewed renderer/task-summary issues.
+- Foreground compact multi-row rendering now keeps task summaries visible while rows are running and resolves summaries from `r.taskSummary`, `rProg?.taskSummary`, or `r.progress?.taskSummary` so parallel/chain running rows do not lose the clean summary.
+- Foreground chain execution now threads `taskSummaryOverride: buildTaskSummary(summarySource)` into `runSync`; follow-up regression coverage locks that behavior in without using expanded `{previous}` output as the summary source.
+- Extended `buildTaskSummary()` stripping to remove labeled single-output instructions (`**Output:** Write your findings to: ...`) as well as progress-only injected suffixes and separator-only noise.
+- Third follow-up (second-pass review): fixed foreground chain summaries to compute `summarySource` from the chain template BEFORE `{previous}` replacement in both sequential and parallel paths. The `summarySource` replaces `{previous}` with neutral `"continue from previous output"` text, preventing expanded prior output from leaking into task summaries. The execution task string still uses the full expanded `{previous}` for correct agent behavior.
+- Refreshed durable patch `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch` (398 lines, 10 files changed) and verified it still coexists with `.pi/patches/pi-subagents-0.24.2-apply-overrides-to-project-agents.patch`.
+- Added `TestReviewFollowUpChainSummarySourceBeforePrevious` regression test class (6 tests) for default/explicit `{previous}` chain step summary behavior.
+- Full validation passes: 151 unit tests, `git diff --check`, root review-artifact cleanliness check, `.pi/install-packages.sh --patch`, and patch dry-run/apply/reverse verification.
 
 ### File List
 
+- `.pi/npm/node_modules/pi-subagents/src/shared/formatters.ts`
+- `.pi/npm/node_modules/pi-subagents/src/tui/render.ts`
+- `.pi/patches/pi-subagents-0.24.2-display-model-task-summary.patch`
+- `tests/test_subagent_model_task_summary.py`
 - `docs/_bmad-output/implementation-artifacts/1-2-2-display-subagent-model-and-task-summary/1-2-2-display-subagent-model-and-task-summary.md`
-- `docs/_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ### Change Log
 
 - 2026-05-13: Created Story 1.2.2 for displaying subagent model names and concise task summaries.
+- 2026-05-13: Implemented full story — added `buildTaskSummary` helper, optional `taskSummary`/`model` fields to types, propagated through foreground/async execution paths, updated all renderers and status formatters, generated durable patch, and added regression tests.
+- 2026-05-13: Addressed BMAD review follow-ups — kept running parallel/chain row summaries visible, added running-progress summary fallback in foreground multi-row rendering, tightened output/progress noise stripping, refreshed the durable patch, and re-ran validations (145 tests passing).
+- 2026-05-13: Fixed second-pass review finding — foreground chain summaries now compute `summarySource` from template before `{previous}` replacement for both sequential and parallel chain paths, preventing expanded prior output from leaking into summaries. Updated existing test, added 6 new regression tests, refreshed durable patch (398 lines). All 151 tests passing.

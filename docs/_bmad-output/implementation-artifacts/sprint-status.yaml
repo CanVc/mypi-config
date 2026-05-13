@@ -52,7 +52,7 @@ development_status:
   1-1-implement-the-generic-sub-agent-dispatch-tool: done
   1-2-add-agent-definitions-and-model-routing-contract: done
   1-2-1-normalize-story-scoped-implementation-artifacts: done
-  1-2-2-display-subagent-model-and-task-summary: ready-for-dev
+  1-2-2-display-subagent-model-and-task-summary: done
   1-3-enforce-fresh-context-session-policy: backlog
   1-4-add-orchestrator-task-routing-and-task-list-state: backlog
   1-5-add-pi-ui-visibility-for-agent-activity: backlog
