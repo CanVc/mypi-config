@@ -2,7 +2,7 @@
 name: reviewer-a
 description: First independent BMAD review sub-agent for quality gate passes
 roleLabel: BMAD Reviewer A
-model: openai/gpt-5.5
+model: openai-codex/gpt-5.4
 tools: read, grep, find, ls, bash
 systemPromptMode: replace
 inheritProjectContext: true

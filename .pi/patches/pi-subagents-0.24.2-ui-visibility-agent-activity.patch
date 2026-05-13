@@ -1,0 +1,1881 @@
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/extension/index.ts b/src/extension/index.ts
+--- a/src/extension/index.ts	2026-05-13 21:44:17.349272761 +0200
++++ b/src/extension/index.ts	2026-05-13 21:40:57.403215925 +0200
+@@ -271,6 +271,9 @@
+ 	primeExistingResults();
+ 
+ 	const runtimeCleanup = () => {
++		try {
++			state.lastUiContext?.ui.setTitle?.(undefined);
++		} catch {}
+ 		stopWidgetAnimation();
+ 		stopResultAnimations();
+ 		stopResultWatcher();
+@@ -577,6 +580,7 @@
+ 		try {
+ 			if (state.lastUiContext?.hasUI) {
+ 				state.lastUiContext.ui.setWidget(WIDGET_KEY, undefined);
++				state.lastUiContext.ui.setTitle?.(undefined);
+ 			}
+ 		} catch (error) {
+ 			if (!isStaleExtensionContextError(error)) throw error;
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/extension/schemas.ts b/src/extension/schemas.ts
+--- a/src/extension/schemas.ts	2026-05-13 21:44:17.352148642 +0200
++++ b/src/extension/schemas.ts	2026-05-13 21:40:57.403342204 +0200
+@@ -38,6 +38,7 @@
+ const TaskItem = Type.Object({
+ 	agent: Type.String(), 
+ 	task: Type.String(), 
++	durableTaskId: Type.Optional(Type.String({ description: "Durable Markdown task id for UI activity-title/task-state matching." })),
+ 	cwd: Type.Optional(Type.String()),
+ 	count: Type.Optional(Type.Integer({ minimum: 1, description: "Repeat this parallel task N times with the same settings." })),
+ 	output: Type.Optional(OutputOverride),
+@@ -52,6 +53,7 @@
+ const ParallelTaskSchema = Type.Object({
+ 	agent: Type.String(),
+ 	task: Type.Optional(Type.String({ description: "Task template with {task}, {previous}, {chain_dir} variables. Defaults to {previous}." })),
++	durableTaskId: Type.Optional(Type.String({ description: "Durable Markdown task id for UI activity-title/task-state matching." })),
+ 	cwd: Type.Optional(Type.String()),
+ 	count: Type.Optional(Type.Integer({ minimum: 1, description: "Repeat this parallel task N times with the same settings." })),
+ 	output: Type.Optional(OutputOverride),
+@@ -68,6 +70,7 @@
+ 	task: Type.Optional(Type.String({
+ 		description: "Task template with variables: {task}=original request, {previous}=prior step's text response, {chain_dir}=shared folder. Required for first step, defaults to '{previous}' for subsequent steps."
+ 	})),
++	durableTaskId: Type.Optional(Type.String({ description: "Durable Markdown task id for UI activity-title/task-state matching." })),
+ 	cwd: Type.Optional(Type.String()),
+ 	output: Type.Optional(OutputOverride),
+ 	outputMode: Type.Optional(OutputModeOverride),
+@@ -101,6 +104,8 @@
+ export const SubagentParams = Type.Object({
+ 	agent: Type.Optional(Type.String({ description: "Agent name (SINGLE mode) or target for management get/update/delete" })),
+ 	task: Type.Optional(Type.String({ description: "Task (SINGLE mode, optional for self-contained agents)" })),
++	taskStatePath: Type.Optional(Type.String({ description: "Durable Markdown task-state artifact to project into Pi UI (read-only)." })),
++	durableTaskId: Type.Optional(Type.String({ description: "Durable Markdown task id for UI activity-title/task-state matching." })),
+ 	// Management action (when present, tool operates in management mode)
+ 	action: Type.Optional(Type.String({
+ 		enum: [...SUBAGENT_ACTIONS],
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/background/async-execution.ts b/src/runs/background/async-execution.ts
+--- a/src/runs/background/async-execution.ts	2026-05-13 21:44:17.522773140 +0200
++++ b/src/runs/background/async-execution.ts	2026-05-13 21:40:57.403545424 +0200
+@@ -18,6 +18,7 @@
+ import { buildSkillInjection, normalizeSkillInput, resolveSkillsWithFallback } from "../../agents/skills.ts";
+ import { resolveChildCwd } from "../../shared/utils.ts";
+ import { buildTaskSummary } from "../../shared/formatters.ts";
++import { resolveAgentRoleLabel } from "../../shared/ui-visibility.ts";
+ import { buildModelCandidates, resolveModelCandidate, type AvailableModelInfo } from "../shared/model-fallback.ts";
+ import { resolveExpectedWorktreeAgentCwd } from "../shared/worktree.ts";
+ import {
+@@ -93,6 +94,7 @@
+ interface AsyncChainParams {
+ 	chain: ChainStep[];
+ 	task?: string;
++	taskStatePath?: string;
+ 	resultMode?: Exclude<SubagentRunMode, "single">;
+ 	agents: AgentConfig[];
+ 	ctx: AsyncExecutionContext;
+@@ -116,6 +118,8 @@
+ interface AsyncSingleParams {
+ 	agent: string;
+ 	task?: string;
++	taskStatePath?: string;
++	durableTaskId?: string;
+ 	agentConfig: AgentConfig;
+ 	ctx: AsyncExecutionContext;
+ 	cwd?: string;
+@@ -144,6 +148,12 @@
+ 	isError?: boolean;
+ }
+ 
++function flattenRunnerStepDurableTaskIds(steps: RunnerStep[]): string[] | undefined {
++	const ids = steps.flatMap((step) => "parallel" in step ? step.parallel.map((task) => task.durableTaskId) : [step.durableTaskId])
++		.filter((id): id is string => typeof id === "string" && id.length > 0);
++	return ids.length > 0 ? ids : undefined;
++}
++
+ export function formatAsyncStartedMessage(headline: string): string {
+ 	return [
+ 		headline,
+@@ -313,6 +323,8 @@
+ 		const cleanTaskText = s.task ?? "{previous}";
+ 		return {
+ 			agent: s.agent,
++			roleLabel: resolveAgentRoleLabel(a, s.agent),
++			...(s.durableTaskId ? { durableTaskId: s.durableTaskId } : {}),
+ 			task,
+ 			taskSummary: buildTaskSummary(cleanTaskText),
+ 			cwd: stepCwd,
+@@ -401,6 +413,7 @@
+ 				share: shareEnabled,
+ 				sessionDir: sessionRoot ? path.join(sessionRoot, `async-${id}`) : undefined,
+ 				asyncDir,
++				taskStatePath: params.taskStatePath,
+ 				sessionId: ctx.currentSessionId,
+ 				piPackageRoot,
+ 				piArgv1: process.argv[1],
+@@ -447,6 +460,7 @@
+ 			pid: spawnResult.pid,
+ 			sessionId: ctx.currentSessionId,
+ 			mode: resultMode,
++			durableTaskIds: flattenRunnerStepDurableTaskIds(steps),
+ 			agent: firstAgents[0],
+ 			agents: flatAgents,
+ 			task: isParallelStep(firstStep)
+@@ -459,6 +473,7 @@
+ 			parallelGroups,
+ 			cwd: runnerCwd,
+ 			asyncDir,
++			taskStatePath: params.taskStatePath,
+ 		});
+ 	}
+ 
+@@ -470,7 +485,7 @@
+ 
+ 	return {
+ 		content: [{ type: "text", text: formatAsyncStartedMessage(`Async ${resultMode}: ${chainDesc} [${id}]`) }],
+-		details: { mode: resultMode, runId: id, results: [], asyncId: id, asyncDir },
++		details: { mode: resultMode, runId: id, taskStatePath: params.taskStatePath, results: [], asyncId: id, asyncDir },
+ 	};
+ }
+ 
+@@ -536,6 +551,8 @@
+ 				steps: [
+ 					{
+ 						agent,
++						roleLabel: resolveAgentRoleLabel(agentConfig, agent),
++						...(params.durableTaskId ? { durableTaskId: params.durableTaskId } : {}),
+ 						task: taskWithOutputInstruction,
+ 						taskSummary: buildTaskSummary(task),
+ 						cwd: runnerCwd,
+@@ -566,6 +583,7 @@
+ 				share: shareEnabled,
+ 				sessionDir: sessionRoot ? path.join(sessionRoot, `async-${id}`) : undefined,
+ 				asyncDir,
++				taskStatePath: params.taskStatePath,
+ 				sessionId: ctx.currentSessionId,
+ 				piPackageRoot,
+ 				piArgv1: process.argv[1],
+@@ -594,6 +612,8 @@
+ 			pid: spawnResult.pid,
+ 			sessionId: ctx.currentSessionId,
+ 			mode: "single",
++			taskStatePath: params.taskStatePath,
++			durableTaskIds: params.durableTaskId ? [params.durableTaskId] : undefined,
+ 			agent,
+ 			task: task?.slice(0, 50),
+ 			cwd: runnerCwd,
+@@ -603,6 +623,6 @@
+ 
+ 	return {
+ 		content: [{ type: "text", text: formatAsyncStartedMessage(`Async: ${agent} [${id}]`) }],
+-		details: { mode: "single", runId: id, results: [], asyncId: id, asyncDir },
++		details: { mode: "single", runId: id, taskStatePath: params.taskStatePath, results: [], asyncId: id, asyncDir },
+ 	};
+ }
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/background/async-job-tracker.ts b/src/runs/background/async-job-tracker.ts
+--- a/src/runs/background/async-job-tracker.ts	2026-05-13 21:44:17.345774691 +0200
++++ b/src/runs/background/async-job-tracker.ts	2026-05-13 21:40:57.403683293 +0200
+@@ -141,6 +141,7 @@
+ 					if (status) {
+ 						const previousStatus = job.status;
+ 						job.status = status.state;
++						job.taskStatePath = status.taskStatePath ?? job.taskStatePath;
+ 						job.sessionId = status.sessionId ?? job.sessionId;
+ 						job.activityState = status.activityState;
+ 						job.lastActivityAt = status.lastActivityAt ?? job.lastActivityAt;
+@@ -217,6 +218,8 @@
+ 			pid: typeof info.pid === "number" ? info.pid : undefined,
+ 			...(typeof info.sessionId === "string" ? { sessionId: info.sessionId } : {}),
+ 			mode: info.mode ?? (info.chain ? "chain" : "single"),
++			taskStatePath: info.taskStatePath,
++			durableTaskIds: info.durableTaskIds,
+ 			agents,
+ 			chainStepCount: info.chainStepCount,
+ 			parallelGroups: validParallelGroups,
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/background/async-status.ts b/src/runs/background/async-status.ts
+--- a/src/runs/background/async-status.ts	2026-05-13 21:44:17.522914839 +0200
++++ b/src/runs/background/async-status.ts	2026-05-13 21:40:57.403869923 +0200
+@@ -3,6 +3,7 @@
+ import { formatDuration, formatTokens, shortenPath } from "../../shared/formatters.ts";
+ import { formatActivityLabel, formatParallelOutcome } from "../../shared/status-format.ts";
+ import { type ActivityState, type AsyncJobStep, type AsyncParallelGroupStatus, type AsyncStatus, type SubagentRunMode, type TokenUsage } from "../../shared/types.ts";
++import { arbitrateRuntimeUiActivity, isTerminalDurableStatus, type DurableTaskStatus } from "../../shared/ui-visibility.ts";
+ import { readStatus } from "../../shared/utils.ts";
+ import { flatToLogicalStepIndex, normalizeParallelGroups } from "./parallel-groups.ts";
+ import { reconcileAsyncRun } from "./stale-run-reconciler.ts";
+@@ -10,6 +11,8 @@
+ interface AsyncRunStepSummary {
+ 	index: number;
+ 	agent: string;
++	roleLabel?: string;
++	durableTaskId?: string;
+ 	status: AsyncJobStep["status"];
+ 	activityState?: ActivityState;
+ 	lastActivityAt?: number;
+@@ -28,6 +31,8 @@
+ 	attemptedModels?: string[];
+ 	error?: string;
+ 	taskSummary?: string;
++	durableStatus?: DurableTaskStatus;
++	degradedReason?: string;
+ }
+ 
+ export interface AsyncRunSummary {
+@@ -43,6 +48,7 @@
+ 	turnCount?: number;
+ 	toolCount?: number;
+ 	mode: SubagentRunMode;
++	taskStatePath?: string;
+ 	cwd?: string;
+ 	startedAt: number;
+ 	lastUpdate?: number;
+@@ -55,6 +61,9 @@
+ 	outputFile?: string;
+ 	totalTokens?: TokenUsage;
+ 	sessionFile?: string;
++	durableTaskIds?: string[];
++	durableStatus?: DurableTaskStatus;
++	degradedReason?: string;
+ }
+ 
+ interface AsyncRunListOptions {
+@@ -120,11 +129,56 @@
+ 	const steps = status.steps ?? [];
+ 	const chainStepCount = status.chainStepCount ?? steps.length;
+ 	const parallelGroups = normalizeParallelGroups(status.parallelGroups, steps.length, chainStepCount);
++	const stepSummaries = steps.map((step, index) => {
++		const stepActivityState = step.activityState;
++		const stepLastActivityAt = step.lastActivityAt;
++		const stepArbitration = arbitrateRuntimeUiActivity({ taskStatePath: status.taskStatePath, runtimeItems: [step], runtimeStatus: step.status });
++		return {
++			index,
++			agent: step.agent,
++			...(step.roleLabel ? { roleLabel: step.roleLabel } : {}),
++			...(step.durableTaskId ? { durableTaskId: step.durableTaskId } : {}),
++			status: step.status,
++			...(stepArbitration.terminalDurableStatus ? { durableStatus: stepArbitration.terminalDurableStatus } : {}),
++			...(stepArbitration.degradedReason ? { degradedReason: stepArbitration.degradedReason } : {}),
++			...(stepActivityState ? { activityState: stepActivityState } : {}),
++			...(stepLastActivityAt ? { lastActivityAt: stepLastActivityAt } : {}),
++			...(step.currentTool ? { currentTool: step.currentTool } : {}),
++			...(step.currentToolArgs ? { currentToolArgs: step.currentToolArgs } : {}),
++			...(step.currentToolStartedAt ? { currentToolStartedAt: step.currentToolStartedAt } : {}),
++			...(step.currentPath ? { currentPath: step.currentPath } : {}),
++			...(step.recentTools ? { recentTools: step.recentTools.map((tool) => ({ ...tool })) } : {}),
++			...(step.recentOutput ? { recentOutput: [...step.recentOutput] } : {}),
++			...(step.turnCount !== undefined ? { turnCount: step.turnCount } : {}),
++			...(step.toolCount !== undefined ? { toolCount: step.toolCount } : {}),
++			...(step.durationMs !== undefined ? { durationMs: step.durationMs } : {}),
++			...(step.tokens ? { tokens: step.tokens } : {}),
++			...(step.skills ? { skills: step.skills } : {}),
++			...(step.model ? { model: step.model } : {}),
++			...(step.attemptedModels ? { attemptedModels: step.attemptedModels } : {}),
++			...(step.error ? { error: step.error } : {}),
++			...(step.taskSummary ? { taskSummary: step.taskSummary } : {}),
++		};
++	});
++	const runRuntimeItems = status.durableTaskIds?.length
++		? [{ durableTaskIds: status.durableTaskIds, status: status.state }, ...stepSummaries]
++		: stepSummaries;
++	const runArbitration = arbitrateRuntimeUiActivity({ taskStatePath: status.taskStatePath, runtimeItems: runRuntimeItems, runtimeStatus: status.state });
++	const effectiveState = runArbitration.terminalDurableStatus === "completed"
++		? "complete"
++		: runArbitration.terminalDurableStatus === "failed"
++			? "failed"
++			: runArbitration.terminalDurableStatus === "blocked"
++				? "paused"
++				: status.state;
+ 	return {
+ 		id: status.runId || path.basename(asyncDir),
+ 		asyncDir,
+ 		...(status.sessionId ? { sessionId: status.sessionId } : {}),
+-		state: status.state,
++		state: effectiveState,
++		...(runArbitration.terminalDurableStatus ? { durableStatus: runArbitration.terminalDurableStatus } : {}),
++		...(runArbitration.degradedReason ? { degradedReason: runArbitration.degradedReason } : {}),
++		...(runArbitration.durableTaskIds.length > 0 ? { durableTaskIds: runArbitration.durableTaskIds } : status.durableTaskIds?.length ? { durableTaskIds: status.durableTaskIds } : {}),
+ 		activityState,
+ 		lastActivityAt,
+ 		currentTool: status.currentTool,
+@@ -133,6 +187,7 @@
+ 		turnCount: status.turnCount,
+ 		toolCount: status.toolCount,
+ 		mode: status.mode,
++		taskStatePath: status.taskStatePath,
+ 		cwd: status.cwd,
+ 		startedAt: status.startedAt,
+ 		lastUpdate: status.lastUpdate,
+@@ -140,32 +195,7 @@
+ 		currentStep: status.currentStep,
+ 		...(status.chainStepCount !== undefined ? { chainStepCount: status.chainStepCount } : {}),
+ 		...(parallelGroups.length ? { parallelGroups } : {}),
+-		steps: steps.map((step, index) => {
+-			const stepActivityState = step.activityState;
+-			const stepLastActivityAt = step.lastActivityAt;
+-			return {
+-				index,
+-				agent: step.agent,
+-				status: step.status,
+-				...(stepActivityState ? { activityState: stepActivityState } : {}),
+-				...(stepLastActivityAt ? { lastActivityAt: stepLastActivityAt } : {}),
+-				...(step.currentTool ? { currentTool: step.currentTool } : {}),
+-				...(step.currentToolArgs ? { currentToolArgs: step.currentToolArgs } : {}),
+-				...(step.currentToolStartedAt ? { currentToolStartedAt: step.currentToolStartedAt } : {}),
+-				...(step.currentPath ? { currentPath: step.currentPath } : {}),
+-				...(step.recentTools ? { recentTools: step.recentTools.map((tool) => ({ ...tool })) } : {}),
+-				...(step.recentOutput ? { recentOutput: [...step.recentOutput] } : {}),
+-				...(step.turnCount !== undefined ? { turnCount: step.turnCount } : {}),
+-				...(step.toolCount !== undefined ? { toolCount: step.toolCount } : {}),
+-				...(step.durationMs !== undefined ? { durationMs: step.durationMs } : {}),
+-				...(step.tokens ? { tokens: step.tokens } : {}),
+-				...(step.skills ? { skills: step.skills } : {}),
+-				...(step.model ? { model: step.model } : {}),
+-				...(step.attemptedModels ? { attemptedModels: step.attemptedModels } : {}),
+-				...(step.error ? { error: step.error } : {}),
+-				...(step.taskSummary ? { taskSummary: step.taskSummary } : {}),
+-			};
+-		}),
++		steps: stepSummaries,
+ 		...(status.sessionDir ? { sessionDir: status.sessionDir } : {}),
+ 		...(status.outputFile ? { outputFile: status.outputFile } : {}),
+ 		...(status.totalTokens ? { totalTokens: status.totalTokens } : {}),
+@@ -234,8 +264,11 @@
+ }
+ 
+ function formatStepLine(step: AsyncRunStepSummary): string {
+-	const parts = [`${step.index + 1}. ${step.agent}`, step.status];
+-	const activity = formatActivityFacts(step);
++	const label = `${step.roleLabel || step.agent}${step.durableTaskId ? ` [${step.durableTaskId}]` : ""}`;
++	const effectiveStatus = step.degradedReason ? "degraded" : step.durableStatus ?? step.status;
++	const parts = [`${step.index + 1}. ${label}`, effectiveStatus];
++	if (step.degradedReason) parts.push(`⚠ ${step.degradedReason}`);
++	const activity = !isTerminalDurableStatus(step.durableStatus) && !step.degradedReason ? formatActivityFacts(step) : undefined;
+ 	if (activity) parts.push(activity);
+ 	if (step.model) parts.push(step.model);
+ 	if (step.taskSummary) parts.push(`· ${step.taskSummary}`);
+@@ -273,8 +306,9 @@
+ function formatRunHeader(run: AsyncRunSummary): string {
+ 	const stepLabel = formatAsyncRunProgressLabel(run);
+ 	const cwd = run.cwd ? shortenPath(run.cwd) : shortenPath(run.asyncDir);
+-	const activity = formatActivityFacts(run);
+-	return `${run.id} | ${run.state}${activity ? ` | ${activity}` : ""} | ${run.mode} | ${stepLabel} | ${cwd}`;
++	const state = run.degradedReason ? `${run.state} (degraded)` : run.durableStatus ?? run.state;
++	const activity = !run.degradedReason && !isTerminalDurableStatus(run.durableStatus) ? formatActivityFacts(run) : undefined;
++	return `${run.id} | ${state}${activity ? ` | ${activity}` : ""} | ${run.mode} | ${stepLabel} | ${cwd}`;
+ }
+ 
+ export function formatAsyncRunList(runs: AsyncRunSummary[], heading = "Active async runs"): string {
+@@ -283,6 +317,7 @@
+ 	const lines = [`${heading}: ${runs.length}`, ""];
+ 	for (const run of runs) {
+ 		lines.push(`- ${formatRunHeader(run)}`);
++		if (run.degradedReason) lines.push(`  ⚠ BMAD task state unavailable: ${run.degradedReason}`);
+ 		for (const step of run.steps) {
+ 			lines.push(`  ${formatStepLine(step)}`);
+ 		}
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/background/run-status.ts b/src/runs/background/run-status.ts
+--- a/src/runs/background/run-status.ts	2026-05-13 21:44:17.523010379 +0200
++++ b/src/runs/background/run-status.ts	2026-05-13 21:40:57.403990352 +0200
+@@ -3,6 +3,7 @@
+ import type { AgentToolResult } from "@earendil-works/pi-agent-core";
+ import { formatAsyncRunList, formatAsyncRunOutputPath, formatAsyncRunProgressLabel, listAsyncRuns } from "./async-status.ts";
+ import { formatActivityLabel } from "../../shared/status-format.ts";
++import { arbitrateRuntimeUiActivity, isTerminalDurableStatus } from "../../shared/ui-visibility.ts";
+ import { ASYNC_DIR, RESULTS_DIR, type AsyncStatus, type Details } from "../../shared/types.ts";
+ import { resolveSubagentIntercomTarget } from "../../intercom/intercom-bridge.ts";
+ import { resolveAsyncRunLocation } from "./async-resume.ts";
+@@ -115,21 +116,42 @@
+ 		const eventsPath = path.join(asyncDir, "events.jsonl");
+ 		if (status) {
+ 			const outputPath = formatAsyncRunOutputPath({ asyncDir, outputFile: status.outputFile });
++			const stepRuntimeItems = status.steps ?? [];
++			const runRuntimeItems = status.durableTaskIds?.length
++				? [{ durableTaskIds: status.durableTaskIds, status: status.state }, ...stepRuntimeItems]
++				: stepRuntimeItems;
++			const runArbitration = arbitrateRuntimeUiActivity({ taskStatePath: status.taskStatePath, runtimeItems: runRuntimeItems, runtimeStatus: status.state });
++			const effectiveRunState = runArbitration.terminalDurableStatus ?? (runArbitration.degradedReason ? `${status.state} (degraded)` : status.state);
++			const effectiveSteps = stepRuntimeItems.map((step, index) => {
++				const arbitration = arbitrateRuntimeUiActivity({ taskStatePath: status.taskStatePath, runtimeItems: [step], runtimeStatus: step.status });
++				const effectiveStatus = arbitration.terminalDurableStatus ?? (arbitration.degradedReason ? "degraded" : step.status);
++				const progressStatus = arbitration.terminalDurableStatus === "failed"
++					? "failed"
++					: arbitration.terminalDurableStatus === "blocked"
++						? "paused"
++						: arbitration.terminalDurableStatus === "completed"
++							? "complete"
++							: arbitration.degradedReason
++								? "paused"
++								: step.status;
++				return { index, agent: step.agent, status: effectiveStatus, progressStatus, arbitration, step };
++			});
+ 			const progressLabel = formatAsyncRunProgressLabel({
+ 				mode: status.mode,
+-				state: status.state,
++				state: isTerminalDurableStatus(runArbitration.terminalDurableStatus) ? "complete" : status.state,
+ 				currentStep: status.currentStep,
+ 				chainStepCount: status.chainStepCount,
+ 				parallelGroups: status.parallelGroups,
+-				steps: (status.steps ?? []).map((step, index) => ({ index, agent: step.agent, status: step.status })),
++				steps: effectiveSteps.map(({ index, agent, progressStatus }) => ({ index, agent, status: progressStatus })),
+ 			});
+ 			const started = new Date(status.startedAt).toISOString();
+ 			const updated = status.lastUpdate ? new Date(status.lastUpdate).toISOString() : "n/a";
+-			const statusActivityText = status.state === "running" ? formatActivityLabel(status.lastActivityAt, status.activityState) : undefined;
++			const statusActivityText = status.state === "running" && !runArbitration.degradedReason && !isTerminalDurableStatus(runArbitration.terminalDurableStatus) ? formatActivityLabel(status.lastActivityAt, status.activityState) : undefined;
+ 
+ 			const lines = [
+ 				`Run: ${status.runId}`,
+-				`State: ${status.state}`,
++				`State: ${effectiveRunState}`,
++				runArbitration.degradedReason ? `⚠ BMAD task state unavailable: ${runArbitration.degradedReason}` : undefined,
+ 				statusActivityText ? `Activity: ${statusActivityText}` : undefined,
+ 				`Mode: ${status.mode}`,
+ 				`Progress: ${progressLabel}`,
+@@ -140,15 +162,18 @@
+ 				reconciliation.message ? `Diagnosis: ${reconciliation.message}` : undefined,
+ 				reconciliation.resultPath && fs.existsSync(reconciliation.resultPath) ? `Result: ${reconciliation.resultPath}` : undefined,
+ 			].filter((line): line is string => Boolean(line));
+-			for (const [index, step] of (status.steps ?? []).entries()) {
+-				const stepActivityText = step.status === "running" ? formatActivityLabel(step.lastActivityAt, step.activityState) : undefined;
++			for (const { index, step, arbitration, status: effectiveStepStatus } of effectiveSteps) {
++				const stepActivityText = step.status === "running" && !arbitration.degradedReason && !isTerminalDurableStatus(arbitration.terminalDurableStatus) ? formatActivityLabel(step.lastActivityAt, step.activityState) : undefined;
+ 				const errorText = step.error ? `, error: ${step.error}` : "";
+ 				const modelText = step.model ? ` (${step.model})` : "";
+ 				const summaryText = step.taskSummary ? ` — ${step.taskSummary}` : "";
+-				lines.push(`${stepLineLabel(status, index)}: ${step.agent}${modelText} ${step.status}${stepActivityText ? `, ${stepActivityText}` : ""}${errorText}${summaryText}`);
++				const taskIdText = step.durableTaskId ? ` [${step.durableTaskId}]` : "";
++				const label = step.roleLabel || step.agent;
++				const warningText = arbitration.degradedReason ? `, ⚠ ${arbitration.degradedReason}` : "";
++				lines.push(`${stepLineLabel(status, index)}: ${label}${taskIdText}${modelText} ${effectiveStepStatus}${stepActivityText ? `, ${stepActivityText}` : ""}${warningText}${errorText}${summaryText}`);
+ 				const stepOutputPath = path.join(asyncDir, `output-${index}.log`);
+ 				if (stepOutputPath !== outputPath && fs.existsSync(stepOutputPath)) lines.push(`  Output: ${stepOutputPath}`);
+-				if (step.status === "running") {
++				if (step.status === "running" && !arbitration.degradedReason && !isTerminalDurableStatus(arbitration.terminalDurableStatus)) {
+ 					lines.push(`  Intercom target: ${resolveSubagentIntercomTarget(status.runId, step.agent, index)} (if registered)`);
+ 				}
+ 			}
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/background/subagent-runner.ts b/src/runs/background/subagent-runner.ts
+--- a/src/runs/background/subagent-runner.ts	2026-05-13 21:44:17.523240668 +0200
++++ b/src/runs/background/subagent-runner.ts	2026-05-13 21:40:57.404250652 +0200
+@@ -82,6 +82,7 @@
+ 	share?: boolean;
+ 	sessionDir?: string;
+ 	asyncDir: string;
++	taskStatePath?: string;
+ 	sessionId?: string | null;
+ 	piPackageRoot?: string;
+ 	piArgv1?: string;
+@@ -95,6 +96,7 @@
+ 
+ interface StepResult {
+ 	agent: string;
++	durableTaskId?: string;
+ 	output: string;
+ 	error?: string;
+ 	success: boolean;
+@@ -554,6 +556,7 @@
+ 	ctx: SingleStepContext,
+ ): Promise<{
+ 	agent: string;
++	durableTaskId?: string;
+ 	output: string;
+ 	exitCode: number | null;
+ 	error?: string;
+@@ -720,6 +723,7 @@
+ 
+ 	return {
+ 		agent: step.agent,
++		...(step.durableTaskId ? { durableTaskId: step.durableTaskId } : {}),
+ 		output: outputForSummary,
+ 		exitCode: finalResult?.exitCode ?? 1,
+ 		error: finalResult?.error,
+@@ -773,7 +777,7 @@
+ 		input.statusPayload.steps[flatTaskIndex].endedAt = input.failedAt;
+ 		input.statusPayload.steps[flatTaskIndex].durationMs = 0;
+ 		input.statusPayload.steps[flatTaskIndex].exitCode = 1;
+-		input.results.push({ agent: input.group.parallel[taskIndex].agent, output: input.setupError, success: false, sessionFile: input.group.parallel[taskIndex].sessionFile });
++		input.results.push({ agent: input.group.parallel[taskIndex].agent, durableTaskId: input.group.parallel[taskIndex].durableTaskId, output: input.setupError, success: false, sessionFile: input.group.parallel[taskIndex].sessionFile });
+ 	}
+ 	input.statusPayload.currentStep = input.groupStartFlatIndex;
+ 	input.statusPayload.lastUpdate = input.failedAt;
+@@ -897,6 +901,7 @@
+ 		runId: id,
+ 		...(config.sessionId ? { sessionId: config.sessionId } : {}),
+ 		mode: config.resultMode ?? (flatSteps.length > 1 ? "chain" : "single"),
++		...(config.taskStatePath ? { taskStatePath: config.taskStatePath } : {}),
+ 		state: "running",
+ 		lastActivityAt: overallStartTime,
+ 		startedAt: overallStartTime,
+@@ -908,6 +913,8 @@
+ 		parallelGroups,
+ 		steps: flatSteps.map((step) => ({
+ 			agent: step.agent,
++			...(step.roleLabel ? { roleLabel: step.roleLabel } : {}),
++			...(step.durableTaskId ? { durableTaskId: step.durableTaskId } : {}),
+ 			status: "pending",
+ 			...(step.sessionFile ? { sessionFile: step.sessionFile } : {}),
+ 			...(step.taskSummary ? { taskSummary: step.taskSummary } : {}),
+@@ -1293,7 +1300,7 @@
+ 							appendJsonl(eventsPath, JSON.stringify({
+ 								type: "subagent.step.failed", ts: skippedAt, runId: id, stepIndex: fi, agent: task.agent, exitCode: -1, durationMs: 0,
+ 							}));
+-							return { agent: task.agent, output: "(skipped — fail-fast)", exitCode: -1 as number | null, skipped: true };
++							return { agent: task.agent, durableTaskId: task.durableTaskId, output: "(skipped — fail-fast)", exitCode: -1 as number | null, skipped: true };
+ 						}
+ 
+ 						const taskStartTime = Date.now();
+@@ -1400,6 +1407,7 @@
+ 				for (const pr of parallelResults) {
+ 					results.push({
+ 						agent: pr.agent,
++						durableTaskId: pr.durableTaskId,
+ 						output: pr.output,
+ 						error: pr.error,
+ 						success: pr.exitCode === 0,
+@@ -1485,6 +1493,7 @@
+ 			previousOutput = singleResult.output;
+ 			results.push({
+ 				agent: singleResult.agent,
++				durableTaskId: singleResult.durableTaskId,
+ 				output: singleResult.output,
+ 				error: singleResult.error,
+ 				success: singleResult.exitCode === 0,
+@@ -1673,6 +1682,7 @@
+ 			summary: interrupted ? "Paused after interrupt. Waiting for explicit next action." : summary,
+ 			results: results.map((r) => ({
+ 				agent: r.agent,
++				durableTaskId: r.durableTaskId,
+ 				output: r.output,
+ 				error: r.error,
+ 				success: r.success,
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/foreground/chain-execution.ts b/src/runs/foreground/chain-execution.ts
+--- a/src/runs/foreground/chain-execution.ts	2026-05-13 21:44:17.523425988 +0200
++++ b/src/runs/foreground/chain-execution.ts	2026-05-13 21:40:57.404414321 +0200
+@@ -250,6 +250,7 @@
+ 				preferredModelProvider: input.ctx.model?.provider,
+ 				skills: behavior.skills === false ? [] : behavior.skills,
+ 				taskSummaryOverride: buildTaskSummary(summarySource),
++				durableTaskId: task.durableTaskId,
+ 				onUpdate: input.onUpdate
+ 					? (progressUpdate) => {
+ 						const stepResults = progressUpdate.details?.results || [];
+@@ -801,6 +802,7 @@
+ 				preferredModelProvider: ctx.model?.provider,
+ 				skills: behavior.skills === false ? [] : behavior.skills,
+ 				taskSummaryOverride: buildTaskSummary(summarySource),
++				durableTaskId: seqStep.durableTaskId,
+ 				onUpdate: onUpdate
+ 					? (p) => {
+ 						const stepResults = p.details?.results || [];
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/foreground/execution.ts b/src/runs/foreground/execution.ts
+--- a/src/runs/foreground/execution.ts	2026-05-13 21:44:17.523614357 +0200
++++ b/src/runs/foreground/execution.ts	2026-05-13 21:40:57.404570461 +0200
+@@ -41,6 +41,7 @@
+ 	extractTextFromContent,
+ } from "../../shared/utils.ts";
+ import { buildTaskSummary } from "../../shared/formatters.ts";
++import { resolveAgentRoleLabel } from "../../shared/ui-visibility.ts";
+ import { buildSkillInjection, resolveSkillsWithFallback } from "../../agents/skills.ts";
+ import { evaluateCompletionMutationGuard } from "../shared/completion-guard.ts";
+ import { getPiSpawnCommand } from "../shared/pi-spawn.ts";
+@@ -91,6 +92,7 @@
+ function snapshotProgress(progress: AgentProgress): AgentProgress {
+ 	return {
+ 		...progress,
++		roleLabel: progress.roleLabel,
+ 		taskSummary: progress.taskSummary,
+ 		model: progress.model,
+ 		skills: progress.skills ? [...progress.skills] : undefined,
+@@ -102,6 +104,8 @@
+ function snapshotResult(result: SingleResult, progress: AgentProgress): SingleResult {
+ 	return {
+ 		...result,
++		roleLabel: result.roleLabel,
++		durableTaskId: result.durableTaskId,
+ 		taskSummary: result.taskSummary,
+ 		messages: result.outputMode === "file-only" && result.savedOutputPath ? undefined : result.messages ? [...result.messages] : undefined,
+ 		usage: { ...result.usage },
+@@ -163,8 +167,11 @@
+ 		childIndex: options.index ?? 0,
+ 	});
+ 
++	const roleLabel = resolveAgentRoleLabel(agent);
+ 	const result: SingleResult = {
+ 		agent: agent.name,
++		roleLabel,
++		...(options.durableTaskId ? { durableTaskId: options.durableTaskId } : {}),
+ 		task,
+ 		taskSummary: options.taskSummaryOverride ?? buildTaskSummary(task),
+ 		exitCode: 0,
+@@ -192,6 +199,8 @@
+ 	const progress: AgentProgress = {
+ 		index: options.index ?? 0,
+ 		agent: agent.name,
++		roleLabel,
++		...(options.durableTaskId ? { durableTaskId: options.durableTaskId } : {}),
+ 		status: "running",
+ 		task,
+ 		taskSummary: options.taskSummaryOverride ?? buildTaskSummary(task),
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/foreground/subagent-executor.ts b/src/runs/foreground/subagent-executor.ts
+--- a/src/runs/foreground/subagent-executor.ts	2026-05-13 21:44:17.354767645 +0200
++++ b/src/runs/foreground/subagent-executor.ts	2026-05-13 21:40:57.404874030 +0200
+@@ -14,6 +14,7 @@
+ import { clearPendingForegroundControlNotices } from "../../extension/control-notices.ts";
+ import { runSync } from "./execution.ts";
+ import { resolveModelCandidate } from "../shared/model-fallback.ts";
++import { buildRuntimeActivityTitle } from "../../shared/ui-visibility.ts";
+ import { aggregateParallelOutputs } from "../shared/parallel-utils.ts";
+ import { recordRun } from "../shared/run-history.ts";
+ import {
+@@ -88,6 +89,7 @@
+ interface TaskParam {
+ 	agent: string;
+ 	task: string;
++	durableTaskId?: string;
+ 	cwd?: string;
+ 	count?: number;
+ 	output?: string | boolean;
+@@ -106,6 +108,8 @@
+ 	index?: number;
+ 	agent?: string;
+ 	task?: string;
++	taskStatePath?: string;
++	durableTaskId?: string;
+ 	message?: string;
+ 	chain?: ChainStep[];
+ 	tasks?: TaskParam[];
+@@ -770,6 +774,16 @@
+ 	return { params };
+ }
+ 
++function setActivityTitle(ctx: ExtensionContext, result: AgentToolResult<Details>): void {
++	if (!ctx.hasUI || !result.details) return;
++	ctx.ui.setTitle?.(buildRuntimeActivityTitle({ details: result.details }));
++}
++
++function clearActivityTitle(ctx: ExtensionContext): void {
++	if (!ctx.hasUI) return;
++	ctx.ui.setTitle?.(undefined);
++}
++
+ function withForkContext(
+ 	result: AgentToolResult<Details>,
+ 	context: SubagentParamsLike["context"],
+@@ -914,8 +928,10 @@
+ 			...(task.outputMode !== undefined ? { outputMode: task.outputMode } : {}),
+ 			...(task.reads !== undefined && task.reads !== true ? { reads: task.reads } : {}),
+ 			...(task.progress !== undefined ? { progress: task.progress } : {}),
++			...(task.durableTaskId ? { durableTaskId: task.durableTaskId } : {}),
+ 		}));
+ 		return executeAsyncChain(id, {
++			taskStatePath: params.taskStatePath,
+ 			chain: [{
+ 				parallel: parallelTasks,
+ 				concurrency: resolveTopLevelParallelConcurrency(params.concurrency, deps.config.parallel?.concurrency),
+@@ -949,6 +965,7 @@
+ 		return executeAsyncChain(id, {
+ 			chain,
+ 			task: params.task,
++			taskStatePath: params.taskStatePath,
+ 			agents,
+ 			ctx: asyncCtx,
+ 			availableModels,
+@@ -988,6 +1005,8 @@
+ 		return executeAsyncSingle(id, {
+ 			agent: params.agent!,
+ 			task: params.context === "fork" ? wrapForkTask(params.task ?? "") : (params.task ?? ""),
++			taskStatePath: params.taskStatePath,
++			durableTaskId: params.durableTaskId,
+ 			agentConfig: a,
+ 			ctx: asyncCtx,
+ 			availableModels,
+@@ -1086,6 +1105,7 @@
+ 		return executeAsyncChain(id, {
+ 			chain: asyncChain,
+ 			task: params.task,
++			taskStatePath: params.taskStatePath,
+ 			agents,
+ 			ctx: asyncCtx,
+ 			availableModels: ctx.modelRegistry.getAvailable().map(toModelInfo),
+@@ -1106,7 +1126,7 @@
+ 		});
+ 	}
+ 
+-	const chainDetails = chainResult.details ? compactForegroundDetails({ ...chainResult.details, runId }) : undefined;
++	const chainDetails = chainResult.details ? compactForegroundDetails({ ...chainResult.details, runId, taskStatePath: params.taskStatePath }) : undefined;
+ 	if (chainDetails) rememberForegroundRun(deps.state, { runId, mode: "chain", cwd: effectiveCwd, results: chainDetails.results });
+ 	const intercomReceipt = chainDetails && !chainDetails.results.some((result) => result.interrupted || result.detached)
+ 		? await maybeBuildForegroundIntercomReceipt({
+@@ -1156,6 +1176,7 @@
+ 	concurrencyLimit: number;
+ 	liveResults: (SingleResult | undefined)[];
+ 	liveProgress: (AgentProgress | undefined)[];
++	taskStatePath?: string;
+ 	onUpdate?: (r: AgentToolResult<Details>) => void;
+ 	worktreeSetup?: WorktreeSetup;
+ }
+@@ -1315,8 +1336,9 @@
+ 			availableModels: input.availableModels,
+ 			preferredModelProvider: input.ctx.model?.provider,
+ 			skills: effectiveSkills === false ? [] : effectiveSkills,
+-				onUpdate: input.onUpdate
+-					? (progressUpdate) => {
++			durableTaskId: task.durableTaskId,
++			onUpdate: input.onUpdate
++				? (progressUpdate) => {
+ 						const stepResults = progressUpdate.details?.results || [];
+ 						const stepProgress = progressUpdate.details?.progress || [];
+ 						if (input.foregroundControl && stepProgress.length > 0) {
+@@ -1341,13 +1363,14 @@
+ 							content: progressUpdate.content,
+ 							details: {
+ 								mode: "parallel",
++								taskStatePath: input.taskStatePath,
+ 								results: mergedResults,
+ 								progress: mergedProgress,
+ 								controlEvents: progressUpdate.details?.controlEvents,
+ 								totalSteps: input.tasks.length,
+ 							},
+ 						});
+-					}
++				}
+ 				: undefined,
+ 		}).finally(() => {
+ 			if (input.foregroundControl?.currentIndex === index) {
+@@ -1425,6 +1448,7 @@
+ 		...(task.outputMode !== undefined ? { outputMode: task.outputMode } : {}),
+ 		...(task.reads !== undefined && task.reads !== true ? { reads: task.reads } : {}),
+ 		...(task.progress !== undefined ? { progress: task.progress } : {}),
++		...(task.durableTaskId ? { durableTaskId: task.durableTaskId } : {}),
+ 		...(skillOverrides[index] !== undefined ? { skills: skillOverrides[index] } : {}),
+ 		...(task.model ? { model: task.model } : {}),
+ 	}));
+@@ -1504,10 +1528,12 @@
+ 					...(behaviorOverrides[i]?.outputMode !== undefined ? { outputMode: behaviorOverrides[i]!.outputMode } : {}),
+ 					...(behaviorOverrides[i]?.reads !== undefined ? { reads: behaviorOverrides[i]!.reads } : {}),
+ 					...(progress !== undefined ? { progress } : {}),
++					...(t.durableTaskId ? { durableTaskId: t.durableTaskId } : {}),
+ 				};
+ 			});
+ 			return executeAsyncChain(id, {
+ 				chain: [{ parallel: parallelTasks, concurrency: parallelConcurrency, worktree: params.worktree }],
++				taskStatePath: params.taskStatePath,
+ 				resultMode: "parallel",
+ 				agents,
+ 				ctx: asyncCtx,
+@@ -1598,6 +1624,7 @@
+ 			maxSubagentDepths,
+ 			liveResults,
+ 			liveProgress,
++			taskStatePath: params.taskStatePath,
+ 			onUpdate,
+ 			worktreeSetup,
+ 		});
+@@ -1615,6 +1642,7 @@
+ 		const details = compactForegroundDetails({
+ 			mode: "parallel",
+ 			runId,
++			taskStatePath: params.taskStatePath,
+ 			results,
+ 			progress: params.includeProgress ? allProgress : undefined,
+ 			artifacts: allArtifactPaths.length ? { dir: artifactsDir, files: allArtifactPaths } : undefined,
+@@ -1771,6 +1799,8 @@
+ 			return executeAsyncSingle(id, {
+ 				agent: params.agent!,
+ 				task: params.context === "fork" ? wrapForkTask(task) : task,
++				taskStatePath: params.taskStatePath,
++				durableTaskId: params.durableTaskId,
+ 				agentConfig,
+ 				ctx: asyncCtx,
+ 				availableModels,
+@@ -1830,8 +1860,17 @@
+ 
+ 	const forwardSingleUpdate = onUpdate
+ 		? (update: AgentToolResult<Details>) => {
++			const updateWithTaskState = update.details && params.taskStatePath
++				? {
++					...update,
++					details: {
++						...update.details,
++						taskStatePath: update.details.taskStatePath ?? params.taskStatePath,
++					},
++				}
++				: update;
+ 			if (foregroundControl) {
+-				const firstProgress = update.details?.progress?.[0];
++				const firstProgress = updateWithTaskState.details?.progress?.[0];
+ 				foregroundControl.currentAgent = params.agent;
+ 				foregroundControl.currentIndex = firstProgress?.index ?? 0;
+ 				foregroundControl.currentActivityState = firstProgress?.activityState;
+@@ -1844,7 +1883,7 @@
+ 				foregroundControl.toolCount = firstProgress?.toolCount;
+ 				foregroundControl.updatedAt = Date.now();
+ 			}
+-			onUpdate(update);
++			onUpdate(updateWithTaskState);
+ 		}
+ 		: undefined;
+ 
+@@ -1874,6 +1913,7 @@
+ 		availableModels,
+ 		preferredModelProvider: currentProvider,
+ 		skills: effectiveSkills,
++		durableTaskId: params.durableTaskId,
+ 	});
+ 	if (foregroundControl?.currentIndex === 0) {
+ 		foregroundControl.interrupt = undefined;
+@@ -1906,6 +1946,7 @@
+ 	const details = compactForegroundDetails({
+ 		mode: "single",
+ 		runId,
++		taskStatePath: params.taskStatePath,
+ 		results: [r],
+ 		progress: params.includeProgress ? allProgress : undefined,
+ 		artifacts: allArtifactPaths.length ? { dir: artifactsDir, files: allArtifactPaths } : undefined,
+@@ -2162,7 +2203,11 @@
+ 			sessionFileForIndex(idx) ?? path.join(sessionDirForIndex(idx), "session.jsonl");
+ 
+ 		const onUpdateWithContext = onUpdate
+-			? (r: AgentToolResult<Details>) => onUpdate(withForkContext(r, effectiveParams.context))
++			? (r: AgentToolResult<Details>) => {
++				const contextual = withForkContext(r, effectiveParams.context);
++				setActivityTitle(ctx, contextual);
++				onUpdate(contextual);
++			}
+ 			: undefined;
+ 
+ 		const execData: ExecutionContextData = {
+@@ -2212,6 +2257,7 @@
+ 		} catch (error) {
+ 			return toExecutionErrorResult(effectiveParams, error);
+ 		} finally {
++			clearActivityTitle(ctx);
+ 			if (foregroundControl) {
+ 				clearPendingForegroundControlNotices(deps.state, runId);
+ 				deps.state.foregroundControls.delete(runId);
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/runs/shared/parallel-utils.ts b/src/runs/shared/parallel-utils.ts
+--- a/src/runs/shared/parallel-utils.ts	2026-05-13 21:44:17.523709067 +0200
++++ b/src/runs/shared/parallel-utils.ts	2026-05-13 21:40:57.405004400 +0200
+@@ -1,5 +1,7 @@
+ export interface RunnerSubagentStep {
+ 	agent: string;
++	roleLabel?: string;
++	durableTaskId?: string;
+ 	task: string;
+ 	taskSummary?: string;
+ 	cwd?: string;
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/shared/settings.ts b/src/shared/settings.ts
+--- a/src/shared/settings.ts	2026-05-13 21:44:17.352567191 +0200
++++ b/src/shared/settings.ts	2026-05-13 21:40:57.405116219 +0200
+@@ -44,6 +44,7 @@
+ export interface SequentialStep {
+ 	agent: string;
+ 	task?: string;
++	durableTaskId?: string;
+ 	cwd?: string;
+ 	output?: string | false;
+ 	outputMode?: OutputMode;
+@@ -57,6 +58,7 @@
+ interface ParallelTaskItem {
+ 	agent: string;
+ 	task?: string;
++	durableTaskId?: string;
+ 	cwd?: string;
+ 	count?: number;
+ 	output?: string | false;
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/shared/types.ts b/src/shared/types.ts
+--- a/src/shared/types.ts	2026-05-13 21:44:17.523940026 +0200
++++ b/src/shared/types.ts	2026-05-13 21:40:57.405258349 +0200
+@@ -134,6 +134,8 @@
+ export interface AgentProgress {
+ 	index: number;
+ 	agent: string;
++	roleLabel?: string;
++	durableTaskId?: string;
+ 	status: "pending" | "running" | "completed" | "failed" | "detached";
+ 	activityState?: ActivityState;
+ 	task: string;
+@@ -180,6 +182,8 @@
+ 
+ export interface SingleResult {
+ 	agent: string;
++	roleLabel?: string;
++	durableTaskId?: string;
+ 	task: string;
+ 	taskSummary?: string;
+ 	exitCode: number;
+@@ -212,6 +216,7 @@
+ 	mode: SubagentRunMode | "management";
+ 	runId?: string;
+ 	context?: "fresh" | "fork";
++	taskStatePath?: string;
+ 	results: SingleResult[];
+ 	controlEvents?: ControlEvent[];
+ 	asyncId?: string;
+@@ -270,6 +275,8 @@
+ 	pid?: number;
+ 	sessionId?: string;
+ 	mode?: SubagentRunMode;
++	taskStatePath?: string;
++	durableTaskIds?: string[];
+ 	agent?: string;
+ 	agents?: string[];
+ 	chain?: string[];
+@@ -281,6 +288,8 @@
+ 	runId: string;
+ 	sessionId?: string;
+ 	mode: SubagentRunMode;
++	taskStatePath?: string;
++	durableTaskIds?: string[];
+ 	state: "queued" | "running" | "complete" | "failed" | "paused";
+ 	activityState?: ActivityState;
+ 	lastActivityAt?: number;
+@@ -299,6 +308,8 @@
+ 	parallelGroups?: AsyncParallelGroupStatus[];
+ 	steps?: Array<{
+ 		agent: string;
++		roleLabel?: string;
++		durableTaskId?: string;
+ 		status: "pending" | "running" | "complete" | "completed" | "failed" | "paused";
+ 		sessionFile?: string;
+ 		activityState?: ActivityState;
+@@ -336,6 +347,7 @@
+ export interface AsyncJobState {
+ 	asyncId: string;
+ 	asyncDir: string;
++	taskStatePath?: string;
+ 	status: "queued" | "running" | "complete" | "failed" | "paused";
+ 	pid?: number;
+ 	sessionId?: string;
+@@ -348,6 +360,7 @@
+ 	toolCount?: number;
+ 	mode?: SubagentRunMode;
+ 	agents?: string[];
++	durableTaskIds?: string[];
+ 	currentStep?: number;
+ 	chainStepCount?: number;
+ 	parallelGroups?: AsyncParallelGroupStatus[];
+@@ -486,6 +499,8 @@
+ 	skills?: string[];
+ 	/** Override the task summary instead of deriving it from the task string */
+ 	taskSummaryOverride?: string;
++	/** Durable BMAD task identifier used to map runtime progress/results to Markdown task state */
++	durableTaskId?: string;
+ }
+ 
+ export type IntercomBridgeMode = "off" | "fork-only" | "always";
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/shared/ui-visibility.ts b/src/shared/ui-visibility.ts
+--- a/src/shared/ui-visibility.ts	1970-01-01 01:00:00.000000000 +0100
++++ b/src/shared/ui-visibility.ts	2026-05-13 21:43:55.317136708 +0200
+@@ -0,0 +1,444 @@
++import * as fs from "node:fs";
++import * as path from "node:path";
++import { buildTaskSummary, formatDuration, formatTokens, shortenPath } from "./formatters.ts";
++import { discoverAgents, type AgentConfig } from "../agents/agents.ts";
++import type { AgentProgress, AsyncJobState, AsyncStatus, SingleResult } from "./types.ts";
++
++export type DurableTaskStatus = "pending" | "in-progress" | "completed" | "blocked" | "failed";
++
++export interface UiTaskDisplay {
++	taskId: string;
++	title: string;
++	targetAgent: string;
++	activeAgentId?: string | null;
++	durableStatus: DurableTaskStatus;
++	activityTitle: string;
++	runtimeStatus?: string;
++	model?: string;
++	taskSummary?: string;
++	tokenCount?: number;
++	elapsedMs?: number;
++	currentTool?: string;
++	currentOperation?: string;
++	currentPath?: string;
++	roleLabel?: string;
++	degradedReason?: string;
++}
++
++export interface UiTaskProjection {
++	degradedReason?: string;
++	tasks: UiTaskDisplay[];
++}
++
++const DURABLE_STATUSES = new Set<DurableTaskStatus>(["pending", "in-progress", "completed", "blocked", "failed"]);
++export const TERMINAL_DURABLE_STATUSES = new Set<DurableTaskStatus>(["completed", "blocked", "failed"]);
++const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
++const CONTROL_PATTERN = /[\u0000-\u001F\u007F]/g;
++
++type RuntimeVisibilityItem = AgentProgress | SingleResult | AsyncJobState | AsyncRuntimeStep;
++
++export function sanitizeUiTitle(value: string | undefined, maxLength = 120): string {
++	const stripped = (value ?? "")
++		.replace(ANSI_PATTERN, "")
++		.replace(CONTROL_PATTERN, " ")
++		.replace(/\s+/g, " ")
++		.trim();
++	if (stripped.length <= maxLength) return stripped;
++	return `${stripped.slice(0, Math.max(1, maxLength - 1)).trimEnd()}…`;
++}
++
++export function resolveAgentRoleLabel(agent: Pick<AgentConfig, "name" | "localName" | "extraFields"> | undefined, fallbackAgent?: string): string {
++	const roleLabel = sanitizeUiTitle(agent?.extraFields?.roleLabel, 80);
++	if (roleLabel) return roleLabel;
++	return sanitizeUiTitle(agent?.localName ?? agent?.name ?? fallbackAgent ?? "unknown-agent", 80) || "unknown-agent";
++}
++
++export function runtimeRoleLabel(input: { roleLabel?: string; agent?: string } | undefined, fallbackAgent?: string): string {
++	return sanitizeUiTitle(input?.roleLabel, 80) || sanitizeUiTitle(input?.agent ?? fallbackAgent ?? "unknown-agent", 80) || "unknown-agent";
++}
++
++function unquoteYamlScalar(value: string): string {
++	const trimmed = value.trim();
++	if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
++		return trimmed.slice(1, -1);
++	}
++	if (trimmed === "null") return "";
++	return trimmed;
++}
++
++function parseInlineYamlValue(value: string): string | string[] | null {
++	const trimmed = value.trim();
++	if (trimmed === "null") return null;
++	if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
++		const inner = trimmed.slice(1, -1).trim();
++		if (!inner) return [];
++		return inner.split(",").map((part) => unquoteYamlScalar(part.trim())).filter(Boolean);
++	}
++	return unquoteYamlScalar(trimmed);
++}
++
++function taskStateYamlBlocks(markdown: string): string[] {
++	const taskState = markdown.match(/### Task State\s*```yaml\s*([\s\S]*?)```/i);
++	if (taskState?.[1]) return [taskState[1]];
++	return [...markdown.matchAll(/```yaml\s*([\s\S]*?tasks:\s*[\s\S]*?)```/gi)].map((match) => match[1] ?? "");
++}
++
++function hasRequiredContextSource(task: Record<string, unknown>): boolean {
++	return Object.hasOwn(task, "contextSource")
++		&& task.type === "artifact-path"
++		&& Array.isArray(task.paths)
++		&& task.paths.some((entry) => typeof entry === "string" && entry.trim().length > 0);
++}
++
++function roleLabelMapForTaskStatePath(taskStatePath: string): Map<string, string> {
++	try {
++		const cwd = path.dirname(path.resolve(taskStatePath));
++		const roleLabels = new Map<string, string>();
++		for (const agent of discoverAgents(cwd, "both").agents) {
++			const roleLabel = resolveAgentRoleLabel(agent, agent.name);
++			roleLabels.set(agent.name, roleLabel);
++			if (agent.localName) roleLabels.set(agent.localName, roleLabel);
++		}
++		return roleLabels;
++	} catch {
++		return new Map();
++	}
++}
++
++function applyConfiguredRoleLabels(projection: UiTaskProjection, roleLabels: Map<string, string>): UiTaskProjection {
++	if (projection.degradedReason || roleLabels.size === 0) return projection;
++	return {
++		tasks: projection.tasks.map((task) => {
++			const roleLabel = roleLabels.get(task.activeAgentId ?? "") ?? roleLabels.get(task.targetAgent);
++			if (!roleLabel) return task;
++			return {
++				...task,
++				roleLabel,
++				activityTitle: formatActivityTitle({ roleLabel, taskId: task.taskId, title: task.title }),
++			};
++		}),
++	};
++}
++
++export function parseDurableTaskState(markdown: string): UiTaskProjection {
++	const blocks = taskStateYamlBlocks(markdown);
++	if (blocks.length === 0) return { degradedReason: "BMAD task state artifact has no readable yaml tasks block", tasks: [] };
++	const block = blocks[0]!;
++	const tasks: Array<Record<string, unknown>> = [];
++	let current: Record<string, unknown> | null = null;
++	let inPaths = false;
++	for (const rawLine of block.split("\n")) {
++		const line = rawLine.replace(/\t/g, "    ");
++		const trimmed = line.trim();
++		if (!trimmed || trimmed.startsWith("#") || trimmed === "tasks:") continue;
++		const itemMatch = line.match(/^\s*-\s+taskId:\s*(.+)$/);
++		if (itemMatch) {
++			current = { taskId: parseInlineYamlValue(itemMatch[1]!) };
++			tasks.push(current);
++			inPaths = false;
++			continue;
++		}
++		if (!current) continue;
++		const kv = line.match(/^\s{4,}([A-Za-z][A-Za-z0-9]*):\s*(.*)$/);
++		if (kv) {
++			const key = kv[1]!;
++			const value = kv[2] ?? "";
++			if (key === "paths") {
++				inPaths = true;
++				current.paths = [];
++				continue;
++			}
++			inPaths = false;
++			current[key] = parseInlineYamlValue(value);
++			continue;
++		}
++		if (inPaths) {
++			const pathMatch = line.match(/^\s*-\s*(.+)$/);
++			if (pathMatch && Array.isArray(current.paths)) current.paths.push(unquoteYamlScalar(pathMatch[1]!));
++		}
++	}
++	if (tasks.length === 0) return { degradedReason: "BMAD task state artifact contains no task records", tasks: [] };
++	const projected: UiTaskDisplay[] = [];
++	for (const task of tasks) {
++		const taskId = typeof task.taskId === "string" ? task.taskId : "";
++		const title = typeof task.title === "string" ? task.title : "";
++		const targetAgent = typeof task.targetAgent === "string" ? task.targetAgent : "";
++		const status = typeof task.status === "string" ? task.status : "";
++		if (!taskId || !title || !targetAgent || !DURABLE_STATUSES.has(status as DurableTaskStatus)) {
++			return { degradedReason: `BMAD task state artifact has malformed task or invalid status '${status || "missing"}'`, tasks: [] };
++		}
++		if (!hasRequiredContextSource(task)) {
++			return { degradedReason: `BMAD task state artifact has malformed task '${taskId || "unknown"}': missing required contextSource`, tasks: [] };
++		}
++		const activeAgentId = typeof task.activeAgentId === "string" && task.activeAgentId ? task.activeAgentId : null;
++		projected.push({
++			taskId,
++			title,
++			targetAgent,
++			activeAgentId,
++			durableStatus: status as DurableTaskStatus,
++			activityTitle: formatActivityTitle({ roleLabel: activeAgentId ?? targetAgent, taskId, title }),
++		});
++	}
++	return { tasks: projected };
++}
++
++export function readDurableTaskProjection(taskStatePath: string | undefined): UiTaskProjection {
++	if (!taskStatePath) return { degradedReason: "BMAD task state artifact path was not provided", tasks: [] };
++	try {
++		const resolved = path.resolve(taskStatePath);
++		const markdown = fs.readFileSync(resolved, "utf-8");
++		return applyConfiguredRoleLabels(parseDurableTaskState(markdown), roleLabelMapForTaskStatePath(resolved));
++	} catch (error) {
++		const message = error instanceof Error ? error.message : String(error);
++		return { degradedReason: `BMAD task state artifact unavailable: ${message}`, tasks: [] };
++	}
++}
++
++export function formatActivityTitle(input: { roleLabel?: string; activeAgentId?: string | null; targetAgent?: string; taskId?: string; title?: string; degradedReason?: string }, maxLength = 120): string {
++	const agent = sanitizeUiTitle(input.roleLabel || input.activeAgentId || input.targetAgent || "unknown-agent", 80) || "unknown-agent";
++	const taskId = sanitizeUiTitle(input.taskId || "unknown-task", 48) || "unknown-task";
++	const title = input.degradedReason ? `degraded: ${input.degradedReason}` : sanitizeUiTitle(input.title || "unknown task", 160);
++	return sanitizeUiTitle(`${agent} · ${taskId} · ${title}`, maxLength);
++}
++
++export function choosePrimaryRuntimeProgress(details: { progress?: AgentProgress[]; results?: SingleResult[] }): AgentProgress | SingleResult | undefined {
++	return details.progress?.find((progress) => progress.status === "running")
++		?? details.results?.find((result) => result.progress?.status === "running")?.progress
++		?? details.results?.find((result) => result.progress?.status === "running")
++		?? details.results?.[0];
++}
++
++function runtimeAgentId(runtime: AgentProgress | SingleResult | undefined): string | undefined {
++	return runtime?.agent;
++}
++
++function runtimeTaskSummary(runtime: AgentProgress | SingleResult | undefined): string | undefined {
++	return sanitizeUiTitle(runtime?.taskSummary || (runtime && "task" in runtime ? buildTaskSummary(runtime.task) : undefined), 80);
++}
++
++type AsyncRuntimeStep = NonNullable<AsyncStatus["steps"]>[number];
++
++function runtimeDurableTaskId(runtime: RuntimeVisibilityItem | undefined): string | undefined {
++	if (!runtime || !("durableTaskId" in runtime)) return undefined;
++	return typeof runtime.durableTaskId === "string" && runtime.durableTaskId ? runtime.durableTaskId : undefined;
++}
++
++export function runtimeDurableTaskIds(runtime: { durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined): string[] {
++	if (!runtime) return [];
++	const singular = "durableTaskId" in runtime && typeof runtime.durableTaskId === "string" && runtime.durableTaskId ? runtime.durableTaskId : undefined;
++	const plural = "durableTaskIds" in runtime && Array.isArray(runtime.durableTaskIds)
++		? runtime.durableTaskIds.filter((id): id is string => typeof id === "string" && id.length > 0)
++		: [];
++	return [...new Set([...(singular ? [singular] : []), ...plural])];
++}
++
++export function runtimeDurableTaskIdsForItems(items: Array<{ durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined>): string[] {
++	return [...new Set(items.flatMap((item) => runtimeDurableTaskIds(item)))];
++}
++
++function runtimeMatchesTask(runtime: RuntimeVisibilityItem, task: UiTaskDisplay): boolean {
++	const durableTaskIds = runtimeDurableTaskIds(runtime);
++	if (durableTaskIds.length > 0) return durableTaskIds.includes(task.taskId);
++	const agent = "agent" in runtime ? runtime.agent : undefined;
++	return Boolean(agent && (agent === task.activeAgentId || agent === task.targetAgent));
++}
++
++export function isTerminalDurableStatus(status: DurableTaskStatus | undefined): boolean {
++	return Boolean(status && TERMINAL_DURABLE_STATUSES.has(status));
++}
++
++function terminalStatusForStatuses(statuses: DurableTaskStatus[]): DurableTaskStatus | undefined {
++	if (statuses.length === 0 || statuses.some((status) => !isTerminalDurableStatus(status))) return undefined;
++	return statuses.find((status) => status === "failed")
++		?? statuses.find((status) => status === "blocked")
++		?? statuses.find((status) => status === "completed");
++}
++
++function durableStatusesFromProjection(projection: UiTaskProjection, ids: string[]): DurableTaskStatus[] {
++	if (projection.degradedReason || ids.length === 0) return [];
++	return ids
++		.map((id) => projection.tasks.find((task) => task.taskId === id)?.durableStatus)
++		.filter((status): status is DurableTaskStatus => Boolean(status));
++}
++
++function durableStatusFromProjection(projection: UiTaskProjection, item: { durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined): DurableTaskStatus | undefined {
++	const idStatuses = durableStatusesFromProjection(projection, runtimeDurableTaskIds(item));
++	if (idStatuses.length > 0) return terminalStatusForStatuses(idStatuses) ?? idStatuses.find(Boolean);
++	const agent = item && "agent" in item ? item.agent : undefined;
++	if (!agent || projection.degradedReason) return undefined;
++	const agentStatuses = projection.tasks
++		.filter((task) => agent === task.activeAgentId || agent === task.targetAgent)
++		.map((task) => task.durableStatus);
++	return agentStatuses.find((status) => status === "in-progress") ?? terminalStatusForStatuses(agentStatuses) ?? agentStatuses.find(Boolean);
++}
++
++export interface UiRuntimeArbitration {
++	hasDurableTaskIds: boolean;
++	durableTaskIds: string[];
++	durableStatuses: DurableTaskStatus[];
++	terminalDurableStatus?: DurableTaskStatus;
++	matchedTask?: UiTaskDisplay;
++	degradedReason?: string;
++	canShowActive: boolean;
++	effectiveStatus: "pending" | "in-progress" | "completed" | "blocked" | "failed" | "degraded" | "runtime";
++	activityTitle?: string;
++}
++
++export function arbitrateRuntimeUiActivity(input: {
++	taskStatePath?: string;
++	runtimeItems?: Array<{ durableTaskId?: string; durableTaskIds?: string[]; agent?: string; status?: string; roleLabel?: string } | RuntimeVisibilityItem | undefined>;
++	runtimeStatus?: string;
++	projection?: UiTaskProjection;
++}): UiRuntimeArbitration {
++	const runtimeItems = input.runtimeItems ?? [];
++	const durableTaskIds = runtimeDurableTaskIdsForItems(runtimeItems);
++	const hasDurableTaskIds = durableTaskIds.length > 0;
++	if (hasDurableTaskIds && !input.taskStatePath && !input.projection) {
++		return {
++			hasDurableTaskIds,
++			durableTaskIds,
++			durableStatuses: [],
++			degradedReason: "BMAD task state artifact path was not provided",
++			canShowActive: false,
++			effectiveStatus: "degraded",
++		};
++	}
++	const projection = input.projection ?? (input.taskStatePath ? readDurableTaskProjection(input.taskStatePath) : undefined);
++	if (projection?.degradedReason) {
++		return {
++			hasDurableTaskIds,
++			durableTaskIds,
++			durableStatuses: [],
++			degradedReason: projection.degradedReason,
++			canShowActive: false,
++			effectiveStatus: "degraded",
++		};
++	}
++	const agentMatchedStatuses = !hasDurableTaskIds && projection && !projection.degradedReason
++		? projection.tasks
++			.filter((task) => runtimeItems.some((runtime) => runtime && "agent" in runtime && runtime.agent && (runtime.agent === task.activeAgentId || runtime.agent === task.targetAgent)))
++			.map((task) => task.durableStatus)
++		: [];
++	const durableStatuses = projection ? (hasDurableTaskIds ? durableStatusesFromProjection(projection, durableTaskIds) : agentMatchedStatuses) : [];
++	if (hasDurableTaskIds && durableStatuses.length === 0) {
++		return {
++			hasDurableTaskIds,
++			durableTaskIds,
++			durableStatuses,
++			degradedReason: `BMAD task state artifact has no matching durable task for ${durableTaskIds.join(", ")}`,
++			canShowActive: false,
++			effectiveStatus: "degraded",
++		};
++	}
++	const hasRuntimeAgent = runtimeItems.some((runtime) => runtime && "agent" in runtime && Boolean(runtime.agent));
++	const matchedTask = projection?.tasks.find((task) => durableTaskIds.includes(task.taskId) && task.durableStatus === "in-progress")
++		?? projection?.tasks.find((task) => task.durableStatus === "in-progress" && runtimeItems.some((runtime) => runtime && "agent" in runtime && (runtime.agent === task.activeAgentId || runtime.agent === task.targetAgent)))
++		?? (!hasDurableTaskIds && !hasRuntimeAgent ? projection?.tasks.find((task) => task.durableStatus === "in-progress") : undefined);
++	const terminalDurableStatus = terminalStatusForStatuses(durableStatuses);
++	const canShowActive = Boolean(matchedTask && (!hasDurableTaskIds || durableStatuses.includes("in-progress")));
++	const effectiveStatus = canShowActive
++		? "in-progress"
++		: terminalDurableStatus
++			? terminalDurableStatus
++			: durableStatuses.find((status) => status === "pending")
++				?? durableStatuses.find(Boolean)
++				?? (input.runtimeStatus ? "runtime" : "pending");
++	return {
++		hasDurableTaskIds,
++		durableTaskIds,
++		durableStatuses,
++		terminalDurableStatus,
++		matchedTask,
++		canShowActive,
++		effectiveStatus,
++		activityTitle: canShowActive ? matchedTask?.activityTitle : undefined,
++	};
++}
++
++export function durableStatusForRuntimeItem(taskStatePath: string | undefined, item: { durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined): DurableTaskStatus | undefined {
++	if (!taskStatePath || runtimeDurableTaskIds(item).length === 0) return undefined;
++	return durableStatusFromProjection(readDurableTaskProjection(taskStatePath), item);
++}
++
++export function durableStatusForRuntimeItems(taskStatePath: string | undefined, items: Array<{ durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined>): DurableTaskStatus | undefined {
++	if (!taskStatePath) return undefined;
++	const projection = readDurableTaskProjection(taskStatePath);
++	for (const item of items) {
++		const status = durableStatusFromProjection(projection, item);
++		if (isTerminalDurableStatus(status)) return status;
++	}
++	return items.map((item) => durableStatusFromProjection(projection, item)).find(Boolean);
++}
++
++export function durableStatusesForRuntimeItems(taskStatePath: string | undefined, items: Array<{ durableTaskId?: string; durableTaskIds?: string[] } | RuntimeVisibilityItem | undefined>): DurableTaskStatus[] {
++	if (!taskStatePath) return [];
++	const projection = readDurableTaskProjection(taskStatePath);
++	if (projection.degradedReason) return [];
++	return durableStatusesFromProjection(projection, runtimeDurableTaskIdsForItems(items));
++}
++
++export function enrichTaskProjection(projection: UiTaskProjection, runtimeItems: Array<AgentProgress | SingleResult | AsyncJobState | AsyncRuntimeStep | undefined>): UiTaskProjection {
++	if (projection.degradedReason) return projection;
++	const runtimes = runtimeItems.filter(Boolean) as RuntimeVisibilityItem[];
++	const tasks = projection.tasks.map((task) => {
++		const runtime = runtimes.find((item) => runtimeDurableTaskId(item) === task.taskId)
++			?? runtimes.find((item) => runtimeMatchesTask(item, task));
++		const fallbackRoleLabel = task.roleLabel ?? task.activeAgentId ?? task.targetAgent;
++		const roleLabel = runtime ? runtimeRoleLabel(runtime as { roleLabel?: string; agent?: string }, fallbackRoleLabel) : fallbackRoleLabel;
++		const runtimeStatus = runtime && "status" in runtime ? String(runtime.status) : undefined;
++		const active = task.durableStatus === "in-progress";
++		return {
++			...task,
++			roleLabel,
++			activityTitle: formatActivityTitle({ roleLabel, taskId: task.taskId, title: task.title }),
++			...(runtimeStatus ? { runtimeStatus } : {}),
++			...(runtime && "model" in runtime && runtime.model ? { model: runtime.model } : {}),
++			...(runtime && "taskSummary" in runtime && runtime.taskSummary ? { taskSummary: sanitizeUiTitle(runtime.taskSummary, 80) } : {}),
++			...(runtime && "currentTool" in runtime && runtime.currentTool && active ? { currentTool: runtime.currentTool, currentOperation: runtime.currentTool } : {}),
++			...(runtime && "currentPath" in runtime && runtime.currentPath && active ? { currentPath: runtime.currentPath } : {}),
++			...(runtime && "tokens" in runtime && typeof runtime.tokens === "number" ? { tokenCount: runtime.tokens } : {}),
++			...(runtime && "tokens" in runtime && typeof runtime.tokens === "object" && runtime.tokens?.total ? { tokenCount: runtime.tokens.total } : {}),
++			...(runtime && "durationMs" in runtime && typeof runtime.durationMs === "number" ? { elapsedMs: runtime.durationMs } : {}),
++		};
++	});
++	return { tasks };
++}
++
++export function buildRuntimeActivityTitle(input: { details?: { taskStatePath?: string; progress?: AgentProgress[]; results?: SingleResult[] }; job?: AsyncJobState }, maxLength = 120): string | undefined {
++	const runtime = input.job?.steps?.find((step) => step.status === "running")
++		?? input.job?.steps?.[0]
++		?? choosePrimaryRuntimeProgress(input.details ?? {});
++	const taskStatePath = input.details?.taskStatePath ?? input.job?.taskStatePath;
++	const runtimeItems = [runtime, input.job].filter(Boolean) as RuntimeVisibilityItem[];
++	const durableTaskIds = runtimeDurableTaskIdsForItems(runtimeItems);
++	const runtimeStatus = input.job?.status ?? (runtime && "status" in runtime ? String(runtime.status) : undefined);
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath, runtimeItems, runtimeStatus });
++	if (arbitration.degradedReason && durableTaskIds.length > 0) return undefined;
++	if (arbitration.activityTitle) return sanitizeUiTitle(arbitration.activityTitle, maxLength);
++	if (arbitration.terminalDurableStatus) return undefined;
++	if (durableTaskIds.length > 0 && !arbitration.canShowActive) return undefined;
++	if (taskStatePath) {
++		const projection = enrichTaskProjection(readDurableTaskProjection(taskStatePath), runtimeItems);
++		if (projection.degradedReason) return formatActivityTitle({ roleLabel: runtimeRoleLabel(runtime as { roleLabel?: string; agent?: string }, runtimeAgentId(runtime)), degradedReason: projection.degradedReason }, maxLength);
++		const activeTask = projection.tasks.find((task) => task.durableStatus === "in-progress" && (runtimeAgentId(runtime) === task.activeAgentId || runtimeAgentId(runtime) === task.targetAgent))
++			?? projection.tasks.find((task) => task.durableStatus === "in-progress");
++		if (activeTask) return sanitizeUiTitle(activeTask.activityTitle, maxLength);
++	}
++	const roleLabel = runtimeRoleLabel(runtime as { roleLabel?: string; agent?: string }, runtimeAgentId(runtime));
++	const summary = runtimeTaskSummary(runtime as AgentProgress | SingleResult | undefined) || "subagent activity";
++	const taskId = input.job?.asyncId ?? "runtime";
++	return formatActivityTitle({ roleLabel, taskId, title: summary }, maxLength);
++}
++
++export function formatRuntimeAnnotation(input: { runtimeStatus?: string; currentTool?: string; currentOperation?: string; currentPath?: string; tokenCount?: number; elapsedMs?: number; model?: string; taskSummary?: string }): string {
++	const parts = [
++		input.runtimeStatus,
++		input.currentOperation ?? input.currentTool,
++		input.currentPath ? shortenPath(input.currentPath) : undefined,
++		input.model,
++		input.tokenCount !== undefined ? formatTokens(input.tokenCount) + " token" : undefined,
++		input.elapsedMs !== undefined ? formatDuration(input.elapsedMs) : undefined,
++	].filter((part): part is string => Boolean(part));
++	return sanitizeUiTitle(parts.join(" · "), 160);
++}
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/shared/utils.ts b/src/shared/utils.ts
+--- a/src/shared/utils.ts	2026-05-13 21:44:17.356106851 +0200
++++ b/src/shared/utils.ts	2026-05-13 21:40:57.405517488 +0200
+@@ -216,6 +216,8 @@
+ 	return {
+ 		index: progress.index,
+ 		agent: progress.agent,
++		roleLabel: progress.roleLabel,
++		durableTaskId: progress.durableTaskId,
+ 		status: progress.status,
+ 		activityState: progress.activityState,
+ 		task: progress.task,
+diff -Naur --exclude package-lock.json --exclude node_modules a/src/tui/render.ts b/src/tui/render.ts
+--- a/src/tui/render.ts	2026-05-13 21:44:17.524150126 +0200
++++ b/src/tui/render.ts	2026-05-13 21:40:57.405808377 +0200
+@@ -23,6 +23,20 @@
+ 	shortenPath,
+ 	buildTaskSummary,
+ } from "../shared/formatters.ts";
++import {
++	arbitrateRuntimeUiActivity,
++	buildRuntimeActivityTitle,
++	durableStatusForRuntimeItem,
++	durableStatusesForRuntimeItems,
++	enrichTaskProjection,
++	formatRuntimeAnnotation,
++	isTerminalDurableStatus,
++	readDurableTaskProjection,
++	runtimeDurableTaskIds,
++	runtimeDurableTaskIdsForItems,
++	runtimeRoleLabel,
++	type DurableTaskStatus,
++} from "../shared/ui-visibility.ts";
+ import { getDisplayItems, getLastActivity, getSingleResultOutput } from "../shared/utils.ts";
+ import { flatToLogicalStepIndex } from "../runs/background/parallel-groups.ts";
+ import { aggregateStepStatus, formatActivityLabel, formatAgentRunningLabel, formatParallelOutcome } from "../shared/status-format.ts";
+@@ -226,6 +240,80 @@
+ 	return text.split("\n").find((line) => line.trim())?.trim() ?? "";
+ }
+ 
++function displayAgentLabel(item: { agent?: string; roleLabel?: string } | undefined, fallback?: string): string {
++	return runtimeRoleLabel(item, fallback);
++}
++
++function runtimeIsRunning(status: string | undefined, taskStatePath: string | undefined, item: { durableTaskId?: string; durableTaskIds?: string[] } | undefined): boolean {
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath, runtimeItems: [item], runtimeStatus: status });
++	return status === "running" && (!arbitration.hasDurableTaskIds || arbitration.canShowActive);
++}
++
++function asyncJobHasReadableDurableProjection(job: AsyncJobState): boolean {
++	const items = [job, ...(job.steps ?? [])];
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath: job.taskStatePath, runtimeItems: items, runtimeStatus: job.status });
++	return runtimeDurableTaskIdsForItems(items).length === 0 || !arbitration.degradedReason;
++}
++
++function asyncJobCanOwnActivityTitle(job: AsyncJobState): boolean {
++	if (job.status !== "running" && job.status !== "queued") return false;
++	const items = [job, ...(job.steps ?? [])];
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath: job.taskStatePath, runtimeItems: items, runtimeStatus: job.status });
++	if (arbitration.hasDurableTaskIds) return arbitration.canShowActive;
++	return true;
++}
++
++function asyncJobTerminalDurableStatus(job: AsyncJobState, fallbackTaskStatePath: string | undefined): DurableTaskStatus | undefined {
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath: job.taskStatePath ?? fallbackTaskStatePath, runtimeItems: [job, ...(job.steps ?? [])], runtimeStatus: job.status });
++	return arbitration.terminalDurableStatus;
++}
++
++function asyncJobEffectiveBucketStatus(job: AsyncJobState, fallbackTaskStatePath: string | undefined): "running" | "queued" | "finished" {
++	const arbitration = arbitrateRuntimeUiActivity({ taskStatePath: job.taskStatePath ?? fallbackTaskStatePath, runtimeItems: [job, ...(job.steps ?? [])], runtimeStatus: job.status });
++	if (arbitration.terminalDurableStatus) return "finished";
++	if (arbitration.hasDurableTaskIds && arbitration.degradedReason) return "running";
++	if (job.status === "running" && (!arbitration.hasDurableTaskIds || arbitration.canShowActive)) return "running";
++	if (job.status === "queued" && (!arbitration.hasDurableTaskIds || arbitration.canShowActive)) return "queued";
++	return "finished";
++}
++
++function expectsBmadTaskProjection(runtimeItems: Array<{ roleLabel?: string; durableTaskId?: string; durableTaskIds?: string[] } | undefined>): boolean {
++	return runtimeItems.some((item) => runtimeDurableTaskIds(item).length > 0
++		|| (typeof item?.roleLabel === "string" && item.roleLabel.trim().startsWith("BMAD ")));
++}
++
++function bmadTaskProjectionLines(taskStatePath: string | undefined, runtimeItems: Array<AgentProgress | Details["results"][number] | AsyncJobState | AsyncJobStep | undefined>, theme: Theme, width: number): string[] {
++	if (!taskStatePath && !expectsBmadTaskProjection(runtimeItems)) return [];
++	const projection = taskStatePath
++		? enrichTaskProjection(readDurableTaskProjection(taskStatePath), runtimeItems)
++		: { degradedReason: "BMAD task state artifact path was not provided", tasks: [] };
++	if (projection.degradedReason) {
++		return [
++			truncLine(`${theme.fg("warning", "⚠ BMAD task state unavailable")}`, width),
++			truncLine(theme.fg("dim", `⎿  ${projection.degradedReason}`), width),
++			truncLine(theme.fg("dim", "⎿  Runtime subagent telemetry may still be visible, but workflow success is not inferred."), width),
++		];
++	}
++	const glyphFor = (status: string) => status === "in-progress"
++		? theme.fg("accent", "●")
++		: status === "completed"
++			? theme.fg("success", "✓")
++			: status === "blocked"
++				? theme.fg("warning", "■")
++				: status === "failed"
++					? theme.fg("error", "✗")
++					: theme.fg("muted", "◦");
++	const lines = [truncLine(`${theme.fg("toolTitle", themeBold(theme, "BMAD task state"))} ${theme.fg("dim", "· durable Markdown")}`, width)];
++	for (const task of projection.tasks) {
++		const label = task.roleLabel || task.activeAgentId || task.targetAgent;
++		lines.push(truncLine(`${glyphFor(task.durableStatus)} ${themeBold(theme, label)} ${theme.fg("dim", `· ${task.durableStatus} · ${task.taskId}`)}`, width));
++		lines.push(truncLine(theme.fg("dim", `  ⎿  ${task.title}`), width));
++		const annotation = formatRuntimeAnnotation(task);
++		if (annotation) lines.push(truncLine(theme.fg("dim", `  ⎿  ${annotation}`), width));
++	}
++	return lines;
++}
++
+ function resultStatusLine(result: Details["results"][number], output: string): string {
+ 	if (result.detached) return result.detachedReason ? `Detached: ${result.detachedReason}` : "Detached";
+ 	if (result.interrupted) return "Paused";
+@@ -234,7 +322,10 @@
+ 	return "Done";
+ }
+ 
+-function resultGlyph(result: Details["results"][number], output: string, theme: Theme, running = result.progress?.status === "running"): string {
++function resultGlyph(result: Details["results"][number], output: string, theme: Theme, running = result.progress?.status === "running", durableStatus?: DurableTaskStatus): string {
++	if (durableStatus === "completed") return theme.fg("success", "✓");
++	if (durableStatus === "blocked") return theme.fg("warning", "■");
++	if (durableStatus === "failed") return theme.fg("error", "✗");
+ 	if (running) return theme.fg("accent", spinnerFrame());
+ 	if (result.detached) return theme.fg("warning", "■");
+ 	if (result.interrupted) return theme.fg("warning", "■");
+@@ -295,7 +386,10 @@
+ 	return "Done";
+ }
+ 
+-function widgetStatusGlyph(job: AsyncJobState, theme: Theme): string {
++function widgetStatusGlyph(job: AsyncJobState, theme: Theme, durableStatus?: DurableTaskStatus): string {
++	if (durableStatus === "completed") return theme.fg("success", "✓");
++	if (durableStatus === "blocked") return theme.fg("warning", "■");
++	if (durableStatus === "failed") return theme.fg("error", "✗");
+ 	if (job.status === "running") return theme.fg("accent", spinnerFrame());
+ 	if (job.status === "queued") return theme.fg("muted", "◦");
+ 	if (job.status === "complete") return theme.fg("success", "✓");
+@@ -303,7 +397,10 @@
+ 	return theme.fg("error", "✗");
+ }
+ 
+-function widgetStepGlyph(status: AsyncJobStep["status"], theme: Theme): string {
++function widgetStepGlyph(status: AsyncJobStep["status"], theme: Theme, durableStatus?: DurableTaskStatus): string {
++	if (durableStatus === "completed") return theme.fg("success", "✓");
++	if (durableStatus === "blocked") return theme.fg("warning", "■");
++	if (durableStatus === "failed") return theme.fg("error", "✗");
+ 	if (status === "running") return theme.fg("accent", spinnerFrame());
+ 	if (status === "complete" || status === "completed") return theme.fg("success", "✓");
+ 	if (status === "failed") return theme.fg("error", "✗");
+@@ -311,7 +408,10 @@
+ 	return theme.fg("muted", "◦");
+ }
+ 
+-function widgetStepStatus(status: AsyncJobStep["status"], theme: Theme): string {
++function widgetStepStatus(status: AsyncJobStep["status"], theme: Theme, durableStatus?: DurableTaskStatus): string {
++	if (durableStatus === "completed") return theme.fg("success", "completed");
++	if (durableStatus === "blocked") return theme.fg("warning", "blocked");
++	if (durableStatus === "failed") return theme.fg("error", "failed");
+ 	if (status === "running") return theme.fg("accent", "running");
+ 	if (status === "complete" || status === "completed") return theme.fg("success", "complete");
+ 	if (status === "failed") return theme.fg("error", "failed");
+@@ -342,7 +442,8 @@
+ 		const steps = job.steps.slice(span.start, span.start + span.count);
+ 		if (span.isParallel) {
+ 			const status = aggregateStepStatus(steps);
+-			lines.push(`  ${widgetStepGlyph(status, theme)} Step ${span.stepIndex + 1}/${total}: ${themeBold(theme, "parallel group")} ${theme.fg("dim", "·")} ${theme.fg("dim", formatParallelOutcome(steps, span.count))}`);
++			const durableStatus = durableStatusForRuntimeItems(job.taskStatePath, steps);
++			lines.push(`  ${widgetStepGlyph(status, theme, durableStatus)} Step ${span.stepIndex + 1}/${total}: ${themeBold(theme, "parallel group")} ${theme.fg("dim", "·")} ${theme.fg("dim", formatParallelOutcome(steps, span.count))}`);
+ 			continue;
+ 		}
+ 		const step = steps[0];
+@@ -363,10 +464,12 @@
+ 	return job.steps.map((step, index) => {
+ 		const marker = index === job.steps!.length - 1 ? "└" : "├";
+ 		const activity = widgetStepActivity(step);
++		const durableStatus = durableStatusForRuntimeItem(job.taskStatePath, step);
+ 		const itemTitle = job.mode === "parallel" || job.activeParallelGroup ? "Agent" : "Step";
+ 		const modelTag = step.model ? ` ${theme.fg("dim", `(${step.model})`)}` : "";
+ 		const summarySuffix = step.taskSummary ? ` ${theme.fg("dim", `· ${step.taskSummary}`)}` : "";
+-		return `  ${theme.fg("dim", `${marker} ${widgetStepGlyph(step.status, theme)} ${itemTitle} ${index + 1}/${total}: ${step.agent}${modelTag} · ${widgetStepStatus(step.status, theme)}${activity ? ` · ${activity}` : ""}${summarySuffix}`)}`;
++		const label = displayAgentLabel(step, step.agent);
++		return `  ${theme.fg("dim", `${marker} ${widgetStepGlyph(step.status, theme, durableStatus)} ${itemTitle} ${index + 1}/${total}: ${label}${modelTag} · ${widgetStepStatus(step.status, theme, durableStatus)}${activity ? ` · ${activity}` : ""}${summarySuffix}`)}`;
+ 	});
+ }
+ 
+@@ -609,16 +712,18 @@
+ 	expanded: boolean,
+ 	width: number,
+ ): string[] {
+-	const status = widgetStepStatus(step.status, theme);
++	const durableStatus = durableStatusForRuntimeItem(job.taskStatePath, step);
++	const status = widgetStepStatus(step.status, theme, durableStatus);
+ 	const stats = widgetStepStats(theme, step);
+ 	const modelTag = step.model ? ` ${theme.fg("dim", `(${step.model})`)}` : "";
+-	const lines = [`  ${widgetStepGlyph(step.status, theme)} ${itemTitle} ${index}/${total}: ${themeBold(theme, step.agent)}${modelTag} ${theme.fg("dim", "·")} ${status}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`];
++	const label = displayAgentLabel(step, step.agent);
++	const lines = [`  ${widgetStepGlyph(step.status, theme, durableStatus)} ${itemTitle} ${index}/${total}: ${themeBold(theme, label)}${modelTag} ${theme.fg("dim", "·")} ${status}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`];
+ 	if (step.taskSummary) {
+ 		lines.push(`    ${theme.fg("dim", `⎿  ${step.taskSummary}`)}`);
+ 	}
+ 	const activity = widgetStepActivityLine(step, width, expanded);
+ 	if (activity) lines.push(`    ${theme.fg("dim", `⎿  ${activity}`)}`);
+-	if (step.status === "running") {
++	if (step.status === "running" && !isTerminalDurableStatus(durableStatus)) {
+ 		if (!expanded) lines.push(`    ${theme.fg("accent", "Press Ctrl+O for live detail")}`);
+ 		const output = widgetOutputPath(job, step);
+ 		if (output) lines.push(`    ${theme.fg("dim", `output: ${shortenPath(output)}`)}`);
+@@ -655,9 +760,11 @@
+ 	const count = job.mode === "chain" ? job.chainStepCount : job.stepsTotal ?? job.agents?.length ?? job.steps?.length;
+ 	const mode = widgetJobName(job);
+ 	const title = `async subagent ${mode}${count && count > 1 ? ` (${count})` : ""}`;
++	const durableStatus = durableStatusForRuntimeItem(job.taskStatePath, job);
+ 	return [
+ 		`${theme.fg("toolTitle", themeBold(theme, title))} ${theme.fg("dim", "· background")}`,
+-		`${widgetStatusGlyph(job, theme)} ${themeBold(theme, mode)}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
++		`${widgetStatusGlyph(job, theme, durableStatus)} ${themeBold(theme, mode)}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
++		...bmadTaskProjectionLines(job.taskStatePath, [job, ...(job.steps ?? [])], theme, width),
+ 		...foregroundStyleWidgetDetails(job, theme, expanded, width),
+ 	].map((line) => truncLine(line, width));
+ }
+@@ -670,15 +777,17 @@
+ 	const itemTitle = job.mode === "parallel" || job.activeParallelGroup ? "Agent" : "Step";
+ 	const lines = fullLines.slice(0, 2);
+ 	for (const [index, step] of job.steps.entries()) {
+-		const status = widgetStepStatus(step.status, theme);
++		const durableStatus = durableStatusForRuntimeItem(job.taskStatePath, step);
++		const status = widgetStepStatus(step.status, theme, durableStatus);
+ 		const activity = widgetStepActivityLine(step, width, false);
+ 		const stepStats = widgetStepStats(theme, step);
+ 		const activitySuffix = activity ? ` ${theme.fg("dim", "·")} ${theme.fg("dim", activity)}` : "";
+ 		const modelTag = step.model ? ` ${theme.fg("dim", `(${step.model})`)}` : "";
+ 		const summarySuffix = step.taskSummary ? ` ${theme.fg("dim", `· ${step.taskSummary}`)}` : "";
+-		lines.push(`  ${widgetStepGlyph(step.status, theme)} ${itemTitle} ${index + 1}/${total}: ${themeBold(theme, step.agent)}${modelTag} ${theme.fg("dim", "·")} ${status}${activitySuffix}${stepStats ? ` ${theme.fg("dim", "·")} ${stepStats}` : ""}${summarySuffix}`);
++		const label = displayAgentLabel(step, step.agent);
++		lines.push(`  ${widgetStepGlyph(step.status, theme, durableStatus)} ${itemTitle} ${index + 1}/${total}: ${themeBold(theme, label)}${modelTag} ${theme.fg("dim", "·")} ${status}${activitySuffix}${stepStats ? ` ${theme.fg("dim", "·")} ${stepStats}` : ""}${summarySuffix}`);
+ 	}
+-	if (job.steps.some((step) => step.status === "running")) lines.push(theme.fg("accent", "  Press Ctrl+O for live detail"));
++	if (job.steps.some((step) => runtimeIsRunning(step.status, job.taskStatePath, step))) lines.push(theme.fg("accent", "  Press Ctrl+O for live detail"));
+ 	return lines.map((line) => truncLine(line, width));
+ }
+ 
+@@ -713,13 +822,15 @@
+ export function buildWidgetLines(jobs: AsyncJobState[], theme: Theme, width = getTermWidth(), expanded = false): string[] {
+ 	if (jobs.length === 0) return [];
+ 	if (jobs.length === 1) return buildSingleWidgetLines(jobs[0]!, theme, width, expanded);
+-	const running = jobs.filter((job) => job.status === "running");
+-	const queued = jobs.filter((job) => job.status === "queued");
+-	const finished = jobs.filter((job) => job.status !== "running" && job.status !== "queued");
++	const taskStatePath = jobs.find((job) => job.taskStatePath)?.taskStatePath;
++	const running = jobs.filter((job) => asyncJobEffectiveBucketStatus(job, taskStatePath) === "running");
++	const queued = jobs.filter((job) => asyncJobEffectiveBucketStatus(job, taskStatePath) === "queued");
++	const finished = jobs.filter((job) => asyncJobEffectiveBucketStatus(job, taskStatePath) === "finished");
+ 
+ 	const lines: string[] = [];
+ 	const hasActive = running.length > 0 || queued.length > 0;
+ 	lines.push(truncLine(`${theme.fg(hasActive ? "accent" : "dim", hasActive ? "●" : "○")} ${theme.fg(hasActive ? "accent" : "dim", "Async agents")} ${theme.fg("dim", "· background")}`, width));
++	lines.push(...bmadTaskProjectionLines(taskStatePath, jobs.flatMap((job) => [job, ...(job.steps ?? [])]), theme, width));
+ 
+ 	const items: string[][] = [];
+ 	let hiddenRunning = 0;
+@@ -730,10 +841,11 @@
+ 	for (const job of running) {
+ 		if (slots <= 0) { hiddenRunning++; continue; }
+ 		const stats = widgetStats(job, theme);
++		const durableStatus = asyncJobTerminalDurableStatus(job, taskStatePath) ?? durableStatusForRuntimeItem(taskStatePath, job);
+ 		items.push([
+-			`${widgetStatusGlyph(job, theme)} ${themeBold(theme, widgetJobName(job))}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
++			`${widgetStatusGlyph(job, theme, durableStatus)} ${themeBold(theme, widgetJobName(job))}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
+ 			`  ${theme.fg("dim", `⎿  ${widgetActivity(job)}`)}`,
+-			...widgetParallelAgentDetails(job, theme),
++			...widgetParallelAgentDetails({ ...job, taskStatePath: job.taskStatePath ?? taskStatePath }, theme),
+ 		]);
+ 		slots--;
+ 	}
+@@ -747,10 +859,11 @@
+ 	for (const job of finished) {
+ 		if (slots <= 0) { hiddenFinished++; continue; }
+ 		const stats = widgetStats(job, theme);
++		const durableStatus = asyncJobTerminalDurableStatus(job, taskStatePath) ?? durableStatusForRuntimeItem(taskStatePath, job);
+ 		items.push([
+-			`${widgetStatusGlyph(job, theme)} ${themeBold(theme, widgetJobName(job))}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
++			`${widgetStatusGlyph(job, theme, durableStatus)} ${themeBold(theme, widgetJobName(job))}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`,
+ 			`  ${theme.fg("dim", `⎿  ${widgetActivity(job)}`)}`,
+-			...widgetParallelAgentDetails(job, theme),
++			...widgetParallelAgentDetails({ ...job, taskStatePath: job.taskStatePath ?? taskStatePath }, theme),
+ 		]);
+ 		slots--;
+ 	}
+@@ -826,7 +939,10 @@
+ export function renderWidget(ctx: ExtensionContext, jobs: AsyncJobState[]): void {
+ 	if (jobs.length === 0) {
+ 		stopWidgetAnimation();
+-		if (ctx.hasUI) ctx.ui.setWidget(WIDGET_KEY, undefined);
++		if (ctx.hasUI) {
++			ctx.ui.setWidget(WIDGET_KEY, undefined);
++			ctx.ui.setTitle?.(undefined);
++		}
+ 		return;
+ 	}
+ 	if (!ctx.hasUI) {
+@@ -837,6 +953,8 @@
+ 	latestWidgetJobs = [...jobs];
+ 
+ 	ctx.ui.setWidget(WIDGET_KEY, buildWidgetComponent(jobs, ctx.ui.getToolsExpanded?.() ?? false));
++	const runningTitleJob = jobs.find((job) => asyncJobCanOwnActivityTitle(job));
++	ctx.ui.setTitle?.(runningTitleJob ? buildRuntimeActivityTitle({ job: runningTitleJob }) : undefined);
+ 	if (hasAnimatedWidgetJobs(jobs)) ensureWidgetAnimation();
+ 	else stopWidgetAnimation();
+ }
+@@ -844,7 +962,8 @@
+ function renderSingleCompact(d: Details, r: Details["results"][number], theme: Theme): Component {
+ 	const output = r.truncation?.text || getSingleResultOutput(r);
+ 	const progress = r.progress || r.progressSummary;
+-	const isRunning = r.progress?.status === "running";
++	const durableStatus = durableStatusForRuntimeItem(d.taskStatePath, r);
++	const isRunning = r.progress?.status === "running" && !isTerminalDurableStatus(durableStatus);
+ 	const contextBadge = d.context === "fork" ? theme.fg("warning", " [fork]") : "";
+ 	const modelDisplay = r.model ? ` ${theme.fg("dim", `(${r.model})`)}` : "";
+ 	const stats = statJoin(theme, [
+@@ -853,7 +972,9 @@
+ 	]);
+ 	const c = new Container();
+ 	const width = getTermWidth() - 4;
+-	c.addChild(new Text(truncLine(`${resultGlyph(r, output, theme, isRunning)} ${theme.fg("toolTitle", theme.bold(r.agent))}${modelDisplay}${contextBadge}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`, width), 0, 0));
++	const label = displayAgentLabel(r, r.agent);
++	c.addChild(new Text(truncLine(`${resultGlyph(r, output, theme, isRunning, durableStatus)} ${theme.fg("toolTitle", theme.bold(label))}${modelDisplay}${contextBadge}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`, width), 0, 0));
++	for (const line of bmadTaskProjectionLines(d.taskStatePath, [r, progress], theme, width)) c.addChild(new Text(line, 0, 0));
+ 
+ 	// Show task summary line
+ 	const taskSummary = r.taskSummary || r.progress?.taskSummary;
+@@ -883,8 +1004,8 @@
+ }
+ 
+ function renderMultiCompact(d: Details, theme: Theme): Component {
+-	const hasRunning = d.progress?.some((p) => p.status === "running")
+-		|| d.results.some((r) => r.progress?.status === "running");
++	const hasRunning = d.progress?.some((p) => runtimeIsRunning(p.status, d.taskStatePath, p))
++		|| d.results.some((r) => runtimeIsRunning(r.progress?.status, d.taskStatePath, r));
+ 	const failed = d.results.some((r) => r.exitCode !== 0 && r.progress?.status !== "running");
+ 	const paused = d.results.some((r) => (r.interrupted || r.detached) && r.progress?.status !== "running");
+ 	let totalSummary = d.progressSummary;
+@@ -915,6 +1036,7 @@
+ 	const c = new Container();
+ 	const width = getTermWidth() - 4;
+ 	c.addChild(new Text(truncLine(`${glyph} ${theme.fg("toolTitle", theme.bold(d.mode))}${contextBadge}${stats ? ` ${theme.fg("dim", "·")} ${stats}` : ""}`, width), 0, 0));
++	for (const line of bmadTaskProjectionLines(d.taskStatePath, [...(d.results ?? []), ...(d.progress ?? [])], theme, width)) c.addChild(new Text(line, 0, 0));
+ 
+ 	const useResultsDirectly = multiLabel.hasParallelInChain || !d.chainAgents?.length;
+ 	const displayStart = multiLabel.showActiveGroupOnly ? multiLabel.groupStartIndex : 0;
+@@ -931,15 +1053,17 @@
+ 		const output = getSingleResultOutput(r);
+ 		const progressFromArray = d.progress?.find((p) => p.index === i) || d.progress?.find((p) => p.agent === r.agent && p.status === "running");
+ 		const rProg = r.progress || progressFromArray || r.progressSummary;
+-		const rRunning = rProg && "status" in rProg && rProg.status === "running";
++		const durableStatus = durableStatusForRuntimeItem(d.taskStatePath, r) ?? durableStatusForRuntimeItem(d.taskStatePath, progressFromArray);
++		const rRunning = rProg && "status" in rProg && rProg.status === "running" && !isTerminalDurableStatus(durableStatus);
+ 		const rPending = rProg && "status" in rProg && rProg.status === "pending";
+ 		const stepNumber = r.progress?.index !== undefined ? r.progress.index + 1 : progressFromArray?.index !== undefined ? progressFromArray.index + 1 : i + 1;
+ 		const stepStats = formatProgressStats(theme, rProg);
+-		const glyph = rPending ? theme.fg("dim", "◦") : resultGlyph(r, output, theme, rRunning);
++		const glyph = rPending ? theme.fg("dim", "◦") : resultGlyph(r, output, theme, rRunning, durableStatus);
+ 		const pendingLabel = rPending ? ` ${theme.fg("dim", "· pending")}` : "";
+ 		const stepLabel = resultRowLabel(d, multiLabel, i, stepNumber);
+ 		const modelTag = r.model ? ` ${theme.fg("dim", `(${r.model})`)}` : "";
+-		const line = `${glyph} ${stepLabel}: ${themeBold(theme, agentName)}${modelTag}${stepStats ? ` ${theme.fg("dim", "·")} ${stepStats}` : ""}${pendingLabel}`;
++		const agentLabel = displayAgentLabel(r, agentName);
++		const line = `${glyph} ${stepLabel}: ${themeBold(theme, agentLabel)}${modelTag}${stepStats ? ` ${theme.fg("dim", "·")} ${stepStats}` : ""}${pendingLabel}`;
+ 		c.addChild(new Text(truncLine(`  ${line}`, width), 0, 0));
+ 		const taskSummary = r.taskSummary || rProg?.taskSummary || r.progress?.taskSummary;
+ 		if (taskSummary) {
+@@ -982,14 +1106,21 @@
+ 	if (d.mode === "single" && d.results.length === 1) {
+ 		const r = d.results[0];
+ 		if (!expanded) return renderSingleCompact(d, r, theme);
+-		const isRunning = r.progress?.status === "running";
+-		const icon = isRunning
+-			? theme.fg("warning", "running")
+-			: r.detached
+-				? theme.fg("warning", "detached")
+-				: r.exitCode === 0
+-					? theme.fg("success", "ok")
+-					: theme.fg("error", "failed");
++		const durableStatus = durableStatusForRuntimeItem(d.taskStatePath, r);
++		const isRunning = r.progress?.status === "running" && !isTerminalDurableStatus(durableStatus);
++		const icon = durableStatus === "completed"
++			? theme.fg("success", "ok")
++			: durableStatus === "blocked"
++				? theme.fg("warning", "blocked")
++				: durableStatus === "failed"
++					? theme.fg("error", "failed")
++					: isRunning
++						? theme.fg("warning", "running")
++						: r.detached
++							? theme.fg("warning", "detached")
++							: r.exitCode === 0
++								? theme.fg("success", "ok")
++								: theme.fg("error", "failed");
+ 		const contextBadge = d.context === "fork" ? theme.fg("warning", " [fork]") : "";
+ 		const output = r.truncation?.text || getSingleResultOutput(r);
+ 
+@@ -1003,7 +1134,8 @@
+ 		const fit = (text: string) => expanded ? text : truncLine(text, w);
+ 		const toolCallLines = getToolCallLines(r, expanded);
+ 		const c = new Container();
+-		c.addChild(new Text(fit(`${icon} ${theme.fg("toolTitle", theme.bold(r.agent))}${contextBadge}${progressInfo}`), 0, 0));
++		c.addChild(new Text(fit(`${icon} ${theme.fg("toolTitle", theme.bold(displayAgentLabel(r, r.agent)))}${contextBadge}${progressInfo}`), 0, 0));
++		for (const line of bmadTaskProjectionLines(d.taskStatePath, [r, r.progress], theme, w)) c.addChild(new Text(fit(line), 0, 0));
+ 		c.addChild(new Spacer(1));
+ 		const taskMaxLen = Math.max(20, w - 8);
+ 		const taskPreview = expanded || r.task.length <= taskMaxLen
+@@ -1076,8 +1208,8 @@
+ 
+ 	if (!expanded) return renderMultiCompact(d, theme);
+ 
+-	const hasRunning = d.progress?.some((p) => p.status === "running") 
+-		|| d.results.some((r) => r.progress?.status === "running");
++	const hasRunning = d.progress?.some((p) => runtimeIsRunning(p.status, d.taskStatePath, p)) 
++		|| d.results.some((r) => runtimeIsRunning(r.progress?.status, d.taskStatePath, r));
+ 	const ok = d.results.filter((r) => r.progress?.status === "completed" || (r.exitCode === 0 && r.progress?.status !== "running")).length;
+ 	const hasEmptyWithoutTarget = d.results.some((r) =>
+ 		r.exitCode === 0
+@@ -1181,23 +1313,31 @@
+ 		const progressFromArray = d.progress?.find((p) => p.index === i) 
+ 			|| d.progress?.find((p) => p.agent === r.agent && p.status === "running");
+ 		const rProg = r.progress || progressFromArray || r.progressSummary;
+-		const rRunning = rProg?.status === "running";
++		const durableStatus = durableStatusForRuntimeItem(d.taskStatePath, r) ?? durableStatusForRuntimeItem(d.taskStatePath, progressFromArray);
++		const rRunning = rProg?.status === "running" && !isTerminalDurableStatus(durableStatus);
+ 		const stepNumber = typeof rProg?.index === "number" ? rProg.index + 1 : i + 1;
+ 
+ 		const resultOutput = getSingleResultOutput(r);
+-		const statusIcon = rRunning
+-			? theme.fg("warning", "running")
+-			: r.exitCode !== 0
+-				? theme.fg("error", "failed")
+-				: hasEmptyTextOutputWithoutOutputTarget(r.task, resultOutput)
+-					? theme.fg("warning", "warning")
+-					: theme.fg("success", "done");
++		const statusIcon = durableStatus === "completed"
++			? theme.fg("success", "done")
++			: durableStatus === "blocked"
++				? theme.fg("warning", "blocked")
++				: durableStatus === "failed"
++					? theme.fg("error", "failed")
++					: rRunning
++						? theme.fg("warning", "running")
++						: r.exitCode !== 0
++							? theme.fg("error", "failed")
++							: hasEmptyTextOutputWithoutOutputTarget(r.task, resultOutput)
++								? theme.fg("warning", "warning")
++								: theme.fg("success", "done");
+ 		const stats = rProg ? ` | ${rProg.toolCount} tools, ${formatDuration(rProg.durationMs)}` : "";
+ 		const modelDisplay = r.model ? theme.fg("dim", ` (${r.model})`) : "";
+ 		const stepLabel = resultRowLabel(d, multiLabel, i, stepNumber);
++		const agentLabel = displayAgentLabel(r, r.agent);
+ 		const stepHeader = rRunning
+-			? `${statusIcon} ${stepLabel}: ${theme.bold(theme.fg("warning", r.agent))}${modelDisplay}${stats}`
+-			: `${statusIcon} ${stepLabel}: ${theme.bold(r.agent)}${modelDisplay}${stats}`;
++			? `${statusIcon} ${stepLabel}: ${theme.bold(theme.fg("warning", agentLabel))}${modelDisplay}${stats}`
++			: `${statusIcon} ${stepLabel}: ${theme.bold(agentLabel)}${modelDisplay}${stats}`;
+ 		const toolCallLines = getToolCallLines(r, expanded);
+ 		c.addChild(new Text(fit(stepHeader), 0, 0));
+ 

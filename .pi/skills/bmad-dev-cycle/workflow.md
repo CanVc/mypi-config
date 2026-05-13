@@ -5,7 +5,7 @@ dev_agent: implementer
 reviewer_agents:
   - reviewer-a
   - reviewer-b
-model: openai/gpt-5.5
+model: openai-codex/gpt-5.5
 required_context: fresh
 ---
 
@@ -18,7 +18,7 @@ required_context: fresh
 ## Critical Rules
 
 - Communicate in the configured `{communication_language}` from `{main_config}` when available.
-- Use model `openai/gpt-5.5` for `implementer`, `reviewer-a`, and `reviewer-b` dispatches.
+- Use model `openai-codex/gpt-5.5` for `implementer`, `reviewer-a`, and `reviewer-b` dispatches.
 - All formal BMAD subagent dispatches MUST set `context: "fresh"` explicitly.
 - Use project agents only: `implementer`, `reviewer-a`, `reviewer-b`.
 - Do not use `context: "fork"` and do not use `subagent({ action: "resume" })` in this workflow.
@@ -59,8 +59,8 @@ required_context: fresh
    ### Orchestrator State
    - Max iterations: 5
    - Current iteration: 0
-   - Dev agent: implementer (`openai/gpt-5.5`)
-   - Review agents: reviewer-a, reviewer-b (`openai/gpt-5.5`)
+   - Dev agent: implementer (`openai-codex/gpt-5.5`)
+   - Review agents: reviewer-a, reviewer-b (`openai-codex/gpt-5.5`)
 
    ### Task State
    ```yaml
@@ -136,9 +136,11 @@ Set `dev-R{i}` to `in-progress`, record `activeAgentId: implementer`, then launc
 ```ts
 subagent({
   agent: "implementer",
-  model: "openai/gpt-5.5",
+  model: "openai-codex/gpt-5.5",
   context: "fresh",
   agentScope: "project",
+  taskStatePath: "{story_file}",
+  durableTaskId: "dev-R{i}",
   task: `You are the BMAD Implementer for iteration R{i}.
 
 Source of truth story file: {story_file}
@@ -165,10 +167,12 @@ Set `review-a-R{i}` and `review-b-R{i}` to `in-progress`, recording `activeAgent
 
 ```ts
 subagent({
+  taskStatePath: "{story_file}",
   tasks: [
     {
       agent: "reviewer-a",
-      model: "openai/gpt-5.5",
+      durableTaskId: "review-a-R{i}",
+      model: "openai-codex/gpt-5.5",
       output: "{story-folder}/review-{story_key}-R{i}-reviewer-a-output.md",
       outputMode: "file-only",
       task: `Run independent BMAD code-review-style pass A for iteration R{i}.
@@ -194,7 +198,8 @@ If no findings, state: No findings.`
     },
     {
       agent: "reviewer-b",
-      model: "openai/gpt-5.5",
+      durableTaskId: "review-b-R{i}",
+      model: "openai-codex/gpt-5.5",
       output: "{story-folder}/review-{story_key}-R{i}-reviewer-b-output.md",
       outputMode: "file-only",
       task: `Run independent BMAD code-review-style pass B for iteration R{i}.

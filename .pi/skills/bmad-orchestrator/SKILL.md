@@ -62,6 +62,32 @@ Fresh-context construction for formal BMAD dispatches:
 - Continue verifying every required artifact path exists and is readable before dispatch.
 - Existing `inheritProjectContext: true` agent frontmatter may provide shared project rules, but story/review truth must come from explicit task text and named artifacts.
 
+## Pi UI Visibility Contract
+
+The v1 BMAD UI surface is the existing Pi TUI and `pi-subagents` status/widget rendering. Do not add or require a web dashboard, daemon, database, sidecar service, separate frontend, custom `dispatch_subagent` tool, dispatchable orchestrator child agent, or nested child-agent orchestration to satisfy UI visibility.
+
+Parent BMAD workflows expose UI-visible state through two read-only inputs:
+
+1. The durable Markdown task-list artifact selected by the active workflow (story/spec/review/run artifact), using the task contract in the next section.
+2. Runtime annotations carried by `pi-subagents`, including configured agent labels, current activity/tool/path, model, token count, elapsed duration, and task summaries.
+
+When a formal BMAD dispatch supports UI task projection, pass the selected durable artifact path as `taskStatePath` to `subagent(...)` (or use the equivalent package-supported task-state artifact annotation). Also pass the matching durable task id as `durableTaskId` for single-agent dispatches or per task item in parallel/chain dispatches so runtime progress, status, results, and terminal titles map to the exact Markdown task before falling back to agent matching. Rendering reads this Markdown artifact and may annotate it with runtime status, but rendering is never workflow truth.
+
+UI-visible labels are derived generically from project agent frontmatter `roleLabel` values. If `roleLabel` is missing, the UI must fall back to agent display/name metadata without crashing. Do not hardcode labels only for `implementer`, `reviewer-a`, or `reviewer-b`.
+
+Terminal/session activity titles should prefer durable task state: `{roleLabel or activeAgentId or targetAgent} · {taskId} · {title}`. Runtime `taskSummary`, current tool/current operation, current path, model name, token count, and elapsed duration are secondary annotations only. Titles must be cleared or restored when work completes, fails, shuts down, or the extension reloads so stale active work is not shown.
+
+Minimal v1 layout rules:
+
+- visible active agents render with an active glyph/title and their configured role label;
+- visible pending/inactive agents render muted and never as active;
+- completed agents/tasks render completed, blocked render warning, and failed render error;
+- hidden agents are omitted from the compact layout unless the expanded/runtime view exposes them as historical evidence;
+- inactive agents without durable in-progress state must not be promoted to active by runtime status alone;
+- missing, unreadable, malformed, or invalid task state renders a degraded warning and must not show success/completion.
+
+UI rendering is a read-only projection of durable Markdown task state plus runtime annotations. It must never mark workflow success, override artifact truth, or make a workflow successful solely because rendering succeeded. Keep the Story 1.4 fixed builder-facing task status vocabulary as the only workflow task vocabulary: `pending`, `in-progress`, `completed`, `blocked`, `failed`.
+
 ## Task Routing and Task List State
 
 Formal BMAD parent workflows that sequence or fan out child agents MUST maintain a builder-facing task list as durable Markdown state. This task list is owned by the parent orchestrator; child output and `pi-subagents` runtime status are control-plane evidence until the parent validates them and writes durable state.

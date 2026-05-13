@@ -55,7 +55,7 @@ development_status:
   1-2-2-display-subagent-model-and-task-summary: done
   1-3-enforce-fresh-context-session-policy: done
   1-4-add-orchestrator-task-routing-and-task-list-state: done
-  1-5-add-pi-ui-visibility-for-agent-activity: ready-for-dev
+  1-5-add-pi-ui-visibility-for-agent-activity: review
   1-6-prove-multi-agent-runtime-with-a-two-agent-smoke-scenario: backlog
   epic-1-retrospective: optional
   epic-2: backlog

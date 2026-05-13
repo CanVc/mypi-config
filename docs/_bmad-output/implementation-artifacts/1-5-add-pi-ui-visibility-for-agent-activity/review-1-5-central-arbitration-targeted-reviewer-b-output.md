@@ -1,0 +1,10 @@
+## Verdict
+CHANGES_REQUESTED
+
+## Findings
+- Severity: Medium
+- Title: Renderer/widget paths can bypass degraded central arbitration for durable IDs that do not resolve to durable task state
+- AC/Constraint: Required Central Runtime/Durable Arbitration; AC4; AC5
+- Location: .pi/npm/node_modules/pi-subagents/src/shared/ui-visibility.ts:265; .pi/npm/node_modules/pi-subagents/src/tui/render.ts:715; .pi/npm/node_modules/pi-subagents/src/tui/render.ts:763; .pi/npm/node_modules/pi-subagents/src/tui/render.ts:965
+- Evidence: `arbitrateRuntimeUiActivity` correctly returns `degradedReason`, `canShowActive: false`, and `effectiveStatus: "degraded"` when runtime has `durableTaskId: "missing-R1"` but the task-state artifact has no matching task. However `durableStatusForRuntimeItem` falls back to same-agent matching and returns `"in-progress"` for the same input, because `durableStatusFromProjection` falls back to agent status after no ID status is found. Foreground and async render rows then use `durableStatusForRuntimeItem`/raw `step.status === "running"` to choose spinner/live-detail rendering, so rendering can drift from the central arbitration result. A read-only TS probe confirmed the split result: `arbitration.degradedReason = "BMAD task state artifact has no matching durable task for missing-R1"`, `arbitration.canShowActive = false`, but `durableStatusForRuntimeItem = "in-progress"`. Current tests also assert renderer source substrings rather than exercising this invariant through rendered foreground/async row/header output.
+- Recommended fix: Make the shared status helper fail closed when durable IDs are present but not matched (no agent fallback in that case), or replace row/header active decisions with a shared effective-activity result that carries `degradedReason`, `canShowActive`, and terminal status. Render degraded/warning state instead of normal spinner/live-detail activity for missing/unmatched/malformed durable task state, and add provider-free tests that execute foreground rendering and async widget row/header formatting for unmatched, missing, unreadable, and malformed task-state cases.

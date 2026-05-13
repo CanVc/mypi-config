@@ -62,7 +62,21 @@ for patch_file in "${patch_files[@]}"; do
     echo "apply-patches: ALREADY_APPLIED $basename"
     already_applied=$((already_applied + 1))
   else
-    fail "$basename cannot be applied and is not already present; package version/content mismatch"
+    # Later project patches can intentionally edit lines introduced by an
+    # earlier patch. In that already-patched working tree, the earlier patch may
+    # no longer reverse cleanly even though its behavior is present. Detect the
+    # Story 1.5 pi-subagents UI patch as the superseding patch for Story 1.2.2's
+    # display patch so --patch remains idempotent without hiding clean-install
+    # failures (fresh installs still apply the display patch before Story 1.5).
+    superseding_patch="$PATCHES_DIR/pi-subagents-0.24.2-ui-visibility-agent-activity.patch"
+    if [ "$basename" = "pi-subagents-0.24.2-display-model-task-summary.patch" ] \
+      && [ -f "$superseding_patch" ] \
+      && patch --reverse --dry-run -p1 -d "$target" < "$superseding_patch" >/dev/null 2>&1; then
+      echo "apply-patches: ALREADY_APPLIED $basename (superseded by $(basename "$superseding_patch"))"
+      already_applied=$((already_applied + 1))
+    else
+      fail "$basename cannot be applied and is not already present; package version/content mismatch"
+    fi
   fi
 done
 

@@ -2,7 +2,7 @@
 name: implementer
 description: BMAD implementation sub-agent for story execution
 roleLabel: BMAD Implementer
-model: openai/gpt-5.5
+model: zai/glm-5.1
 tools: read, grep, find, ls, bash, edit, write
 systemPromptMode: replace
 inheritProjectContext: true
